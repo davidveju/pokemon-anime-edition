@@ -811,6 +811,29 @@
 	trainerbattle LOCALID_NONE, \trainer, NULL, \lose_text, NULL, LOCALID_NONE, TRAINER_NONE, NULL, NULL, NULL, NULL, NULL, FALSE, TRUE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE
 	.endm
 
+	@ Pokemon Anime Edition: trainer battle with intro and loss texts in the
+	@ boot language (FLAG_ANIME_LANG_BIT0/1: 00=ES, 01=EN, 10=PT, 11=IT).
+	@ Same battle flags as trainerbattle_no_intro, but with an intro text.
+	.macro trainerbattle_no_intro_i18n trainer:req, intro_es:req, intro_en:req, intro_pt:req, intro_it:req, lose_es:req, lose_en:req, lose_pt:req, lose_it:req
+	checkflag FLAG_ANIME_LANG_BIT0
+	goto_if TRUE, AnimeTrNoIntro_\@_EnOrIt
+	checkflag FLAG_ANIME_LANG_BIT1
+	goto_if TRUE, AnimeTrNoIntro_\@_Pt
+	trainerbattle LOCALID_NONE, \trainer, \intro_es, \lose_es, NULL, LOCALID_NONE, TRAINER_NONE, NULL, NULL, NULL, NULL, NULL, FALSE, TRUE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE
+	goto AnimeTrNoIntro_\@_End
+AnimeTrNoIntro_\@_EnOrIt:
+	checkflag FLAG_ANIME_LANG_BIT1
+	goto_if TRUE, AnimeTrNoIntro_\@_It
+	trainerbattle LOCALID_NONE, \trainer, \intro_en, \lose_en, NULL, LOCALID_NONE, TRAINER_NONE, NULL, NULL, NULL, NULL, NULL, FALSE, TRUE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE
+	goto AnimeTrNoIntro_\@_End
+AnimeTrNoIntro_\@_Pt:
+	trainerbattle LOCALID_NONE, \trainer, \intro_pt, \lose_pt, NULL, LOCALID_NONE, TRAINER_NONE, NULL, NULL, NULL, NULL, NULL, FALSE, TRUE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE
+	goto AnimeTrNoIntro_\@_End
+AnimeTrNoIntro_\@_It:
+	trainerbattle LOCALID_NONE, \trainer, \intro_it, \lose_it, NULL, LOCALID_NONE, TRAINER_NONE, NULL, NULL, NULL, NULL, NULL, FALSE, TRUE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE
+AnimeTrNoIntro_\@_End:
+	.endm
+
 	@ Starts a double battle with the player against two trainers
 	@ Takes two trainers and defeat text for each
 	.macro trainerbattle_two_trainers trainer_a:req, lose_text_a:req, trainer_b:req, lose_text_b:req
@@ -2124,6 +2147,30 @@
 	.macro msgbox text:req, type=MSGBOX_DEFAULT
 	loadword 0, \text
 	callstd \type
+	.endm
+
+	@ Pokemon Anime Edition: shows one of four texts depending on the boot
+	@ language flags (FLAG_ANIME_LANG_BIT0/1: 00=ES, 01=EN, 10=PT, 11=IT).
+	@ Portuguese texts must avoid tilde vowels (use ao/AO) and every line must stay
+	@ within 35 characters before \n, \l or \p.
+	.macro msgbox_i18n text_es:req, text_en:req, text_pt:req, text_it:req, type=MSGBOX_DEFAULT
+	checkflag FLAG_ANIME_LANG_BIT0
+	goto_if TRUE, AnimeI18n_\@_EnOrIt
+	checkflag FLAG_ANIME_LANG_BIT1
+	goto_if TRUE, AnimeI18n_\@_Pt
+	msgbox \text_es, \type
+	goto AnimeI18n_\@_End
+AnimeI18n_\@_EnOrIt:
+	checkflag FLAG_ANIME_LANG_BIT1
+	goto_if TRUE, AnimeI18n_\@_It
+	msgbox \text_en, \type
+	goto AnimeI18n_\@_End
+AnimeI18n_\@_Pt:
+	msgbox \text_pt, \type
+	goto AnimeI18n_\@_End
+AnimeI18n_\@_It:
+	msgbox \text_it, \type
+AnimeI18n_\@_End:
 	.endm
 
 	@ Gives 'amount' of the specified 'item' to the player and prints a message with fanfare.

@@ -860,12 +860,13 @@
 #define TRAINER_BRENDAN_PLACEHOLDER         853
 #define TRAINER_MAY_PLACEHOLDER             854
 
-// NOTE: Because each Trainer uses a flag to determine when they are defeated, there is only space for 9 additional trainers before trainer flag space overflows
-//       More space can be made by shifting flags around in constants/flags.h or changing how trainer flags are handled
-//       MAX_TRAINERS_COUNT can be increased but will take up additional saveblock space
+// NOTE: MAX_TRAINERS_COUNT_EMERALD is set to 950 since Phase 0 to reserve
+//       trainer flag space for Kanto, Orange Islands and Johto without shifting
+//       SYSTEM_FLAGS or breaking saves in later phases.
+//       (TRAINERS_COUNT_EMERALD stays 855 for now; the extra IDs are free.)
 
 #define TRAINERS_COUNT_EMERALD     855
-#define MAX_TRAINERS_COUNT_EMERALD 864
+#define MAX_TRAINERS_COUNT_EMERALD 950
 
 #if IS_FRLG
 #define TRAINERS_COUNT                      TRAINERS_COUNT_FRLG

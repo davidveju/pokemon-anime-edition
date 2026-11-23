@@ -110,6 +110,10 @@ enum {
     MSG_ITEM_IS_HELD,
     MSG_CHANGED_TO_ITEM,
     MSG_CANT_STORE_MAIL,
+    MSG_ANIME_NO_DEPOSIT_ES,
+    MSG_ANIME_NO_DEPOSIT_EN,
+    MSG_ANIME_NO_DEPOSIT_PT,
+    MSG_ANIME_NO_DEPOSIT_IT,
 };
 
 // IDs for how to resolve variables in the above messages
@@ -1081,6 +1085,10 @@ static const struct StorageMessage sMessages[] =
     [MSG_ITEM_IS_HELD]           = {COMPOUND_STRING("{DYNAMIC 0} is now held."),   MSG_VAR_ITEM_NAME},
     [MSG_CHANGED_TO_ITEM]        = {COMPOUND_STRING("Changed to {DYNAMIC 0}."),    MSG_VAR_ITEM_NAME},
     [MSG_CANT_STORE_MAIL]        = {COMPOUND_STRING("MAIL can't be stored!"),      MSG_VAR_NONE},
+    [MSG_ANIME_NO_DEPOSIT_ES]    = {COMPOUND_STRING("¡Pikachu quiere estar contigo!"), MSG_VAR_NONE},
+    [MSG_ANIME_NO_DEPOSIT_EN]    = {COMPOUND_STRING("Pikachu wants to stay with you!"), MSG_VAR_NONE},
+    [MSG_ANIME_NO_DEPOSIT_PT]    = {COMPOUND_STRING("Pikachu quer ficar contigo!"), MSG_VAR_NONE},
+    [MSG_ANIME_NO_DEPOSIT_IT]    = {COMPOUND_STRING("Pikachu vuole restare con te!"), MSG_VAR_NONE},
 };
 
 static const struct WindowTemplate sYesNoWindowTemplate =
@@ -2237,6 +2245,7 @@ enum {
     MSTATE_WAIT_MSG,
     MSTATE_ERROR_LAST_PARTY_MON,
     MSTATE_ERROR_HAS_MAIL,
+    MSTATE_ERROR_ANIME_NO_DEPOSIT,
     MSTATE_WAIT_ERROR_MSG,
     MSTATE_MULTIMOVE_RUN,
     MSTATE_MULTIMOVE_RUN_CANCEL,
@@ -2244,6 +2253,8 @@ enum {
     MSTATE_SCROLL_BOX_ITEM,
     MSTATE_WAIT_ITEM_ANIM,
 };
+
+static bool8 IsAnimeStarterPikachuAtCursor(void);
 
 static void Task_PokeStorageMain(u8 taskId)
 {
@@ -2327,7 +2338,11 @@ static void Task_PokeStorageMain(u8 taskId)
             }
             break;
         case INPUT_DEPOSIT:
-            if (!IsRemovingLastPartyMon())
+            if (IsAnimeStarterPikachuAtCursor())
+            {
+                sStorage->state = MSTATE_ERROR_ANIME_NO_DEPOSIT;
+            }
+            else if (!IsRemovingLastPartyMon())
             {
                 if (ItemIsMail(sStorage->displayMonItemId))
                 {
@@ -2345,7 +2360,11 @@ static void Task_PokeStorageMain(u8 taskId)
             }
             break;
         case INPUT_MOVE_MON:
-            if (IsRemovingLastPartyMon())
+            if (IsAnimeStarterPikachuAtCursor())
+            {
+                sStorage->state = MSTATE_ERROR_ANIME_NO_DEPOSIT;
+            }
+            else if (IsRemovingLastPartyMon())
             {
                 sStorage->state = MSTATE_ERROR_LAST_PARTY_MON;
             }
@@ -2470,6 +2489,25 @@ static void Task_PokeStorageMain(u8 taskId)
     case MSTATE_ERROR_HAS_MAIL:
         PlaySE(SE_FAILURE);
         PrintMessage(MSG_PLEASE_REMOVE_MAIL);
+        sStorage->state = MSTATE_WAIT_ERROR_MSG;
+        break;
+    case MSTATE_ERROR_ANIME_NO_DEPOSIT:
+        PlaySE(SE_FAILURE);
+        switch (GetAnimeLanguage())
+        {
+        case 1:
+            PrintMessage(MSG_ANIME_NO_DEPOSIT_EN);
+            break;
+        case 2:
+            PrintMessage(MSG_ANIME_NO_DEPOSIT_PT);
+            break;
+        case 3:
+            PrintMessage(MSG_ANIME_NO_DEPOSIT_IT);
+            break;
+        default:
+            PrintMessage(MSG_ANIME_NO_DEPOSIT_ES);
+            break;
+        }
         sStorage->state = MSTATE_WAIT_ERROR_MSG;
         break;
     case MSTATE_WAIT_ERROR_MSG:
@@ -6892,6 +6930,18 @@ static bool8 IsRemovingLastPartyMon(void)
         return TRUE;
     else
         return FALSE;
+}
+
+// Pokemon Anime Edition: the starter Pikachu refuses to be deposited in the PC.
+static bool8 IsAnimeStarterPikachuAtCursor(void)
+{
+    if (sCursorArea != CURSOR_AREA_IN_PARTY)
+        return FALSE;
+    if (!FlagGet(FLAG_ANIME_PIKACHU_CANNOT_DEPOSIT))
+        return FALSE;
+    if (sCursorPosition < 0 || sCursorPosition >= PARTY_SIZE)
+        return FALSE;
+    return GetMonData(&gParties[B_TRAINER_PLAYER][sCursorPosition], MON_DATA_SPECIES) == SPECIES_PIKACHU;
 }
 
 static bool8 CanPlaceMon(void)

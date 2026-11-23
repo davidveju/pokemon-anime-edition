@@ -5639,25 +5639,44 @@ enum Obedience GetAttackerObedienceForAction(void)
         return OBEYS;
     if (B_OBEDIENCE_MECHANICS < GEN_8 && !IsOtherTrainer(gBattleMons[gBattlerAttacker].otId, gBattleMons[gBattlerAttacker].otName))
         return OBEYS;
-    if (FlagGet(FLAG_BADGE08_GET)) // Rain Badge, ignore obedience altogether
-        return OBEYS;
+    // Pokemon Anime Edition: Ash's Pikachu disobeys until it decides to obey
+    // (FLAG_ANIME_PIKACHU_OBEDIENT, set on Route 1), and Charmeleon/Charizard
+    // disobey until FLAG_ANIME_CHARIZARD_OBEDIENT is set. Player side only.
+    {
+        bool8 animeDisobeys = FALSE;
+        if (GetBattlerSide(gBattlerAttacker) == B_SIDE_PLAYER)
+        {
+            enum Species attackerSpecies = gBattleMons[gBattlerAttacker].species;
+            if (attackerSpecies == SPECIES_PIKACHU && !FlagGet(FLAG_ANIME_PIKACHU_OBEDIENT))
+                animeDisobeys = TRUE;
+            else if ((attackerSpecies == SPECIES_CHARMELEON || attackerSpecies == SPECIES_CHARIZARD)
+                  && !FlagGet(FLAG_ANIME_CHARIZARD_OBEDIENT))
+                animeDisobeys = TRUE;
+        }
+        if (animeDisobeys)
+            obedienceLevel = 0;
+        else if (FlagGet(FLAG_BADGE08_GET)) // Rain Badge, ignore obedience altogether
+            return OBEYS;
+        else
+        {
+            obedienceLevel = 10;
 
-    obedienceLevel = 10;
-
-    if (FlagGet(FLAG_BADGE01_GET)) // Stone Badge
-        obedienceLevel = 20;
-    if (FlagGet(FLAG_BADGE02_GET)) // Knuckle Badge
-        obedienceLevel = 30;
-    if (FlagGet(FLAG_BADGE03_GET)) // Dynamo Badge
-        obedienceLevel = 40;
-    if (FlagGet(FLAG_BADGE04_GET)) // Heat Badge
-        obedienceLevel = 50;
-    if (FlagGet(FLAG_BADGE05_GET)) // Balance Badge
-        obedienceLevel = 60;
-    if (FlagGet(FLAG_BADGE06_GET)) // Feather Badge
-        obedienceLevel = 70;
-    if (FlagGet(FLAG_BADGE07_GET)) // Mind Badge
-        obedienceLevel = 80;
+            if (FlagGet(FLAG_BADGE01_GET)) // Stone Badge
+                obedienceLevel = 20;
+            if (FlagGet(FLAG_BADGE02_GET)) // Knuckle Badge
+                obedienceLevel = 30;
+            if (FlagGet(FLAG_BADGE03_GET)) // Dynamo Badge
+                obedienceLevel = 40;
+            if (FlagGet(FLAG_BADGE04_GET)) // Heat Badge
+                obedienceLevel = 50;
+            if (FlagGet(FLAG_BADGE05_GET)) // Balance Badge
+                obedienceLevel = 60;
+            if (FlagGet(FLAG_BADGE06_GET)) // Feather Badge
+                obedienceLevel = 70;
+            if (FlagGet(FLAG_BADGE07_GET)) // Mind Badge
+                obedienceLevel = 80;
+        }
+    }
 
     if (B_OBEDIENCE_MECHANICS >= GEN_8
      && !IsOtherTrainer(gBattleMons[gBattlerAttacker].otId, gBattleMons[gBattlerAttacker].otName))

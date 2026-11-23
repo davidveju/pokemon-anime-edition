@@ -4412,6 +4412,12 @@ enum Species GetEvolutionTargetSpecies(struct Pokemon *mon, enum EvolutionMode m
     enum HoldEffect holdEffect;
     const struct Evolution *evolutions = GetSpeciesEvolutions(species);
 
+    // Pokemon Anime Edition: Ash's Pikachu refuses to evolve with a Thunder Stone.
+    if (species == SPECIES_PIKACHU
+     && evolutionItem == ITEM_THUNDER_STONE
+     && FlagGet(FLAG_ANIME_PIKACHU_CANNOT_EVOLVE))
+        return SPECIES_NONE;
+
     if (evolutions == NULL)
         return SPECIES_NONE;
 

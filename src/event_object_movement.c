@@ -2120,6 +2120,31 @@ struct Pokemon *GetFirstLiveMon(void)
     return NULL;
 }
 
+// Pokemon Anime Edition: the follower is always the player's starter Pikachu.
+// Returns NULL unless FLAG_ANIME_PIKACHU_RECEIVED is set (and followers are
+// not disabled via FLAG_ANIME_FOLLOWERS_DISABLED), in which case it returns
+// the first conscious party Pikachu.
+struct Pokemon *GetFollowerMon(void)
+{
+    u32 i;
+    if (!FlagGet(FLAG_ANIME_PIKACHU_RECEIVED))
+        return NULL;
+    if (FlagGet(FLAG_ANIME_FOLLOWERS_DISABLED))
+        return NULL;
+    for (i = 0; i < PARTY_SIZE; i++)
+    {
+        struct Pokemon *mon = &gParties[B_TRAINER_PLAYER][i];
+        if (GetMonData(mon, MON_DATA_SPECIES_OR_EGG) != SPECIES_PIKACHU)
+            continue;
+        if (mon->box.isEgg || mon->box.isBadEgg)
+            continue;
+        if (mon->hp == 0)
+            continue;
+        return mon;
+    }
+    return NULL;
+}
+
 // Return follower ObjectEvent or NULL
 struct ObjectEvent *GetFollowerObject(void)
 {
@@ -2335,7 +2360,7 @@ static bool8 GetMonInfo(struct Pokemon *mon, enum Species *species, bool32 *shin
 // Retrieve graphic information about the following Pokémon, if any
 bool8 GetFollowerInfo(enum Species *species, bool32 *shiny, bool32 *female)
 {
-    return GetMonInfo(GetFirstLiveMon(), species, shiny, female);
+    return GetMonInfo(GetFollowerMon(), species, shiny, female);
 }
 
 // Update following Pokémon if any

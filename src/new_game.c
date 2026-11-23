@@ -52,6 +52,7 @@
 #include "constants/items.h"
 #include "difficulty.h"
 #include "follower_npc.h"
+#include "anime_boot.h"
 
 extern const u8 EventScript_ResetAllMapFlags[];
 extern const u8 EventScript_ResetAllMapFlagsFrlg[];
@@ -64,6 +65,8 @@ static void ResetDexNav(void);
 
 EWRAM_DATA bool8 gDifferentSaveFile = FALSE;
 EWRAM_DATA bool8 gEnableContestDebugging = FALSE;
+
+static const u8 sText_AnimeRivalDefaultName[] = _("GARY");
 
 static const struct ContestWinner sContestWinnerPicDummy =
 {
@@ -135,10 +138,11 @@ static void ClearFrontierRecord(void)
 
 static void WarpToTruck(void)
 {
-    if (IS_FRLG)
-        SetWarpDestination(MAP_GROUP(MAP_PALLET_TOWN_PLAYERS_HOUSE_2F), MAP_NUM(MAP_PALLET_TOWN_PLAYERS_HOUSE_2F), WARP_ID_NONE, 6, 6);
-    else
-        SetWarpDestination(MAP_GROUP(MAP_INSIDE_OF_TRUCK), MAP_NUM(MAP_INSIDE_OF_TRUCK), WARP_ID_NONE, -1, -1);
+    // Pokemon Anime Edition (Phase 0): skip the moving truck entirely and
+    // start directly in Pallet Town on a walkable tile verified in
+    // data/maps/PalletTown_Frlg/map.json (in front of the player's house,
+    // next to Prof. Oak).
+    SetWarpDestination(MAP_GROUP(MAP_PALLET_TOWN), MAP_NUM(MAP_PALLET_TOWN), WARP_ID_NONE, 10, 9);
     WarpIntoMap();
 }
 
@@ -212,13 +216,23 @@ void NewGameInitData(void)
     ResetLotteryCorner();
     UpdateDailySeed();
     WarpToTruck();
-    if (IS_FRLG)
-        RunScriptImmediately(EventScript_ResetAllMapFlagsFrlg);
-    else
-        RunScriptImmediately(EventScript_ResetAllMapFlags);
+    // Pokemon Anime Edition: clear both Hoenn and Kanto map flags so the
+    // combined Hoenn + Kanto build starts with a clean state.
+    RunScriptImmediately(EventScript_ResetAllMapFlags);
+    RunScriptImmediately(EventScript_ResetAllMapFlagsFrlg);
+    // Pokemon Anime Edition: persist the boot selections (language from
+    // the boot menus, gender / name from the Oak intro). This runs after
+    // Sav2_ClearSetDefault() and after both map flag resets above, which
+    // clear gSaveBlock2Ptr and all flags.
+    gSaveBlock2Ptr->playerGender = gSelectedBootGender;
+    StringCopy(gSaveBlock2Ptr->playerName, gSelectedBootName);
+    SetAnimeLanguage(gSelectedBootLanguage);
 #if IS_FRLG
-        StringCopy(gSaveBlock1Ptr->rivalName, rivalName);
+    StringCopy(gSaveBlock1Ptr->rivalName, rivalName);
 #endif
+    // The rival is always GARY: ClearSav1() above wipes the name and the
+    // Oak intro skips the rival naming screen.
+    StringCopy(gSaveBlock1Ptr->rivalName, sText_AnimeRivalDefaultName);
     ResetMiniGamesRecords();
     InitUnionRoomChatRegisteredTexts();
     InitLilycoveLady();

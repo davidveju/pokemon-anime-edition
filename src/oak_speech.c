@@ -21,8 +21,11 @@
 #include "util.h"
 #include "constants/rgb.h"
 #include "constants/songs.h"
+#include "anime_boot.h"
 
-#if IS_FRLG
+// Pokemon Anime Edition: the classic Oak intro is always built, even in the
+// Emerald-based combined Hoenn + Kanto build (IS_FRLG == 0).
+#if 1
 
 #define INTRO_SPECIES SPECIES_NIDORAN_F
 
@@ -80,14 +83,10 @@ static void Task_OakSpeech_ClearGenderWindows(u8);
 static void Task_OakSpeech_LoadPlayerPic(u8);
 static void Task_OakSpeech_YourNameWhatIsIt(u8);
 static void Task_OakSpeech_FadeOutForPlayerNamingScreen(u8);
-static void Task_OakSpeech_HandleRivalNameInput(u8);
 static void Task_OakSpeech_DoNamingScreen(u8);
 static void Task_OakSpeech_ConfirmName(u8);
 static void Task_OakSpeech_HandleConfirmNameInput(u8);
 static void Task_OakSpeech_FadeOutPlayerPic(u8);
-static void Task_OakSpeech_FadeOutRivalPic(u8);
-static void Task_OakSpeech_FadeInRivalPic(u8);
-static void Task_OakSpeech_AskRivalsName(u8);
 static void Task_OakSpeech_ReshowPlayersPic(u8);
 static void Task_OakSpeech_LetsGo(u8);
 static void Task_OakSpeech_FadeOutBGM(u8);
@@ -110,8 +109,6 @@ static void LoadTrainerPic(u16, u16);
 static void ClearTrainerPic(void);
 static void CreateFadeInTask(u8, u8);
 static void CreateFadeOutTask(u8, u8);
-static void PrintNameChoiceOptions(u8, u8);
-static void GetDefaultName(u8, u8);
 
 extern const u8 gText_Controls[];
 extern const u8 gText_Next[];
@@ -344,11 +341,238 @@ enum
     NUM_PIKACHU_INTRO_PAGES,
 };
 
-static const u8 *const sPikachuIntro_Strings[NUM_PIKACHU_INTRO_PAGES] =
+
+// Pokemon Anime Edition: Oak intro texts in ES / EN / PT / IT, selected with
+// gSelectedBootLanguage (00=ES, 01=EN, 10=PT, 11=IT).
+// Portuguese avoids tilde vowels (uses ao/AO); every line is short.
+static const u8 sText_AnimeOakWelcome_ES[] = _("¡Hola! ¡Encantado de conocerte!\pBienvenido al mundo POKéMON.\pMe llamo OAK.\pLa gente me llama con cariño\ncomo el PROFESOR POKéMON.\p$");
+static const u8 sText_AnimeOakWelcome_EN[] = _("Hello, there!\nGlad to meet you!\pWelcome to the world of POKéMON!\pMy name is OAK.\pPeople affectionately refer to me\nas the POKéMON PROFESSOR.\p$");
+static const u8 sText_AnimeOakWelcome_PT[] = _("Ola! Prazer em conhecer-te!\pBem-vindo ao mundo POKéMON.\pO meu nome e OAK.\pTodos me tratam com carinho\ncomo o PROFESSOR POKéMON.\p$");
+static const u8 sText_AnimeOakWelcome_IT[] = _("Ciao! Piacere di conoscerti!\pBenvenuto nel mondo POKéMON.\pMi chiamo OAK.\pTutti mi chiamano il\nPROFESSOR POKéMON.\p$");
+static const u8 *const sAnimeOakWelcome[] = {
+    sText_AnimeOakWelcome_ES,
+    sText_AnimeOakWelcome_EN,
+    sText_AnimeOakWelcome_PT,
+    sText_AnimeOakWelcome_IT,
+};
+static const u8 sText_AnimeOakThisWorld_ES[] = _("Este mundo…$");
+static const u8 sText_AnimeOakThisWorld_EN[] = _("This world…$");
+static const u8 sText_AnimeOakThisWorld_PT[] = _("Este mundo…$");
+static const u8 sText_AnimeOakThisWorld_IT[] = _("Questo mondo…$");
+static const u8 *const sAnimeOakThisWorld[] = {
+    sText_AnimeOakThisWorld_ES,
+    sText_AnimeOakThisWorld_EN,
+    sText_AnimeOakThisWorld_PT,
+    sText_AnimeOakThisWorld_IT,
+};
+static const u8 sText_AnimeOakInhabited_ES[] = _("…habitan por todas partes\ncriaturas llamadas POKéMON.\p$");
+static const u8 sText_AnimeOakInhabited_EN[] = _("…is inhabited far and wide by\ncreatures called POKéMON.\p$");
+static const u8 sText_AnimeOakInhabited_PT[] = _("…e habitado por toda a parte\npor criaturas chamadas POKéMON.\p$");
+static const u8 sText_AnimeOakInhabited_IT[] = _("…e abitato in lungo e in largo\nda creature chiamate POKéMON.\p$");
+static const u8 *const sAnimeOakInhabited[] = {
+    sText_AnimeOakInhabited_ES,
+    sText_AnimeOakInhabited_EN,
+    sText_AnimeOakInhabited_PT,
+    sText_AnimeOakInhabited_IT,
+};
+static const u8 sText_AnimeOakStudy_ES[] = _("Para algunos, los POKéMON son\nmascotas. Otros los usan para\ncombatir.\pEn cuanto a mí…\pEstudio los POKéMON como\nprofesión.\p$");
+static const u8 sText_AnimeOakStudy_EN[] = _("For some people, POKéMON are pets.\nOthers use them for battling.\pAs for myself…\pI study POKéMON as a profession.\p$");
+static const u8 sText_AnimeOakStudy_PT[] = _("Para alguns, os POKéMON sao\nanimais de estimacao. Outros\nusam-nos para lutar.\pQuanto a mim…\pEstudo os POKéMON como\nprofissao.\p$");
+static const u8 sText_AnimeOakStudy_IT[] = _("Per alcuni, i POKéMON sono\nanimali da compagnia. Altri\nli usano per lottare.\pQuanto a me…\pStudio i POKéMON per\nprofessione.\p$");
+static const u8 *const sAnimeOakStudy[] = {
+    sText_AnimeOakStudy_ES,
+    sText_AnimeOakStudy_EN,
+    sText_AnimeOakStudy_PT,
+    sText_AnimeOakStudy_IT,
+};
+static const u8 sText_AnimeOakTellMe_ES[] = _("Pero antes, cuéntame un poco\nsobre ti.\p$");
+static const u8 sText_AnimeOakTellMe_EN[] = _("But first, tell me a little about\nyourself.\p$");
+static const u8 sText_AnimeOakTellMe_PT[] = _("Mas primeiro, conta-me um\npouco sobre ti.\p$");
+static const u8 sText_AnimeOakTellMe_IT[] = _("Ma prima, raccontami un po'\ndi te.\p$");
+static const u8 *const sAnimeOakTellMe[] = {
+    sText_AnimeOakTellMe_ES,
+    sText_AnimeOakTellMe_EN,
+    sText_AnimeOakTellMe_PT,
+    sText_AnimeOakTellMe_IT,
+};
+static const u8 sText_AnimeOakAskGender_ES[] = _("Y ahora dime. ¿Eres un chico?\n¿O eres una chica?$");
+static const u8 sText_AnimeOakAskGender_EN[] = _("Now tell me. Are you a boy?\nOr are you a girl?$");
+static const u8 sText_AnimeOakAskGender_PT[] = _("Agora diz-me. Es um menino?\nOu es uma menina?$");
+static const u8 sText_AnimeOakAskGender_IT[] = _("Ora dimmi. Sei un ragazzo?\nO sei una ragazza?$");
+static const u8 *const sAnimeOakAskGender[] = {
+    sText_AnimeOakAskGender_ES,
+    sText_AnimeOakAskGender_EN,
+    sText_AnimeOakAskGender_PT,
+    sText_AnimeOakAskGender_IT,
+};
+static const u8 sText_AnimeOakBoy_ES[] = _("CHICO");
+static const u8 sText_AnimeOakBoy_EN[] = _("BOY");
+static const u8 sText_AnimeOakBoy_PT[] = _("MENINO");
+static const u8 sText_AnimeOakBoy_IT[] = _("RAGAZZO");
+static const u8 sText_AnimeOakGirl_ES[] = _("CHICA");
+static const u8 sText_AnimeOakGirl_EN[] = _("GIRL");
+static const u8 sText_AnimeOakGirl_PT[] = _("MENINA");
+static const u8 sText_AnimeOakGirl_IT[] = _("RAGAZZA");
+static const u8 *const sAnimeOakBoy[] = {
+    sText_AnimeOakBoy_ES,
+    sText_AnimeOakBoy_EN,
+    sText_AnimeOakBoy_PT,
+    sText_AnimeOakBoy_IT,
+};
+static const u8 *const sAnimeOakGirl[] = {
+    sText_AnimeOakGirl_ES,
+    sText_AnimeOakGirl_EN,
+    sText_AnimeOakGirl_PT,
+    sText_AnimeOakGirl_IT,
+};
+static const u8 sText_AnimeOakYourName_ES[] = _("Empecemos por tu nombre.\n¿Cómo te llamas?\p$");
+static const u8 sText_AnimeOakYourName_EN[] = _("Let's begin with your name.\nWhat is it?\p$");
+static const u8 sText_AnimeOakYourName_PT[] = _("Vamos comecar pelo teu nome.\nComo te chamas?\p$");
+static const u8 sText_AnimeOakYourName_IT[] = _("Cominciamo dal tuo nome.\nCome ti chiami?\p$");
+static const u8 *const sAnimeOakYourName[] = {
+    sText_AnimeOakYourName_ES,
+    sText_AnimeOakYourName_EN,
+    sText_AnimeOakYourName_PT,
+    sText_AnimeOakYourName_IT,
+};
+static const u8 sText_AnimeOakSoYourName_ES[] = _("Ya veo…\nEntonces te llamas {PLAYER}.$");
+static const u8 sText_AnimeOakSoYourName_EN[] = _("Right…\nSo your name is {PLAYER}.$");
+static const u8 sText_AnimeOakSoYourName_PT[] = _("Entendo…\nEntao chamas-te {PLAYER}.$");
+static const u8 sText_AnimeOakSoYourName_IT[] = _("Capisco…\nQuindi ti chiami {PLAYER}.$");
+static const u8 *const sAnimeOakSoYourName[] = {
+    sText_AnimeOakSoYourName_ES,
+    sText_AnimeOakSoYourName_EN,
+    sText_AnimeOakSoYourName_PT,
+    sText_AnimeOakSoYourName_IT,
+};
+static const u8 sText_AnimeOakLetsGo_ES[] = _("¡{PLAYER}!\p¡Tu propia leyenda POKéMON\nestá a punto de comenzar!\p¡Un mundo de sueños y aventuras\ncon POKéMON te espera! ¡Vamos!$");
+static const u8 sText_AnimeOakLetsGo_EN[] = _("{PLAYER}!\pYour very own POKéMON legend\nis about to unfold!\pA world of dreams and adventures\nwith POKéMON awaits! Let's go!$");
+static const u8 sText_AnimeOakLetsGo_PT[] = _("{PLAYER}!\pA tua propria lenda POKéMON\nesta prestes a comecar!\pUm mundo de sonhos e aventuras\ncom POKéMON espera-te! Vamos!$");
+static const u8 sText_AnimeOakLetsGo_IT[] = _("{PLAYER}!\pLa tua leggenda POKéMON\nsta per iniziare!\pUn mondo di sogni e avventure\ncon i POKéMON ti aspetta! Andiamo!$");
+static const u8 *const sAnimeOakLetsGo[] = {
+    sText_AnimeOakLetsGo_ES,
+    sText_AnimeOakLetsGo_EN,
+    sText_AnimeOakLetsGo_PT,
+    sText_AnimeOakLetsGo_IT,
+};
+static const u8 sText_AnimePikachuPage1_ES[] = _("En el mundo al que estás a punto\nde entrar, vivirás una gran\naventura como héroe.\n\nHabla con la gente y examina\ntodo lo que veas, ya sean\npueblos, rutas o cuevas. Reúne\ninformación y pistas donde puedas.$");
+static const u8 sText_AnimePikachuPage1_EN[] = _("In the world which you are about\nto enter, you will embark on a grand\nadventure with you as the hero.\n\nSpeak to people and check things\nwherever you go, be it towns, roads,\nor caves. Gather information and\nhints from every source.$");
+static const u8 sText_AnimePikachuPage1_PT[] = _("No mundo que estas prestes\na entrar, vais viver uma grande\naventura como heroi.\n\nFala com as pessoas e examina\ntudo o que vires, sejam vilas,\nrotas ou cavernas. Recolhe\ninformacao e pistas onde puderes.$");
+static const u8 sText_AnimePikachuPage1_IT[] = _("Nel mondo in cui stai per\nentrare, vivrai una grande\navventura da eroe.\n\nParla con la gente ed esamina\ntutto ciò che vedi, paesi,\nstrade o caverne. Raccogli\ninformazioni e indizi ovunque.$");
+static const u8 *const sAnimePikachuPage1[] = {
+    sText_AnimePikachuPage1_ES,
+    sText_AnimePikachuPage1_EN,
+    sText_AnimePikachuPage1_PT,
+    sText_AnimePikachuPage1_IT,
+};
+static const u8 sText_AnimePikachuPage2_ES[] = _("Ayudando a los necesitados,\nsuperando retos y resolviendo\nmisterios, se abrirán nuevos\ncaminos.\n\nA veces te retarán otros y te\natacarán criaturas salvajes.\nSé valiente y sigue adelante.$");
+static const u8 sText_AnimePikachuPage2_EN[] = _("New paths will open to you by helping\npeople in need, overcoming challenges,\nand solving mysteries.\n\nAt times, you will be challenged by\nothers and attacked by wild creatures.\nBe brave and keep pushing on.$");
+static const u8 sText_AnimePikachuPage2_PT[] = _("Ajudando quem precisa,\nsuperando desafios e resolvendo\nmisterios, novos caminhos\nvao abrir-se.\n\nPor vezes seras desafiado por\noutros e atacado por criaturas\nselvagens. Se corajoso e continua.$");
+static const u8 sText_AnimePikachuPage2_IT[] = _("Aiutando chi ha bisogno,\nsuperando sfide e risolvendo\nmisteri, si apriranno nuove\nstrade.\n\nA volte sarai sfidato da altri\ne attaccato da creature selvatiche.\nSii coraggioso e vai avanti.$");
+static const u8 *const sAnimePikachuPage2[] = {
+    sText_AnimePikachuPage2_ES,
+    sText_AnimePikachuPage2_EN,
+    sText_AnimePikachuPage2_PT,
+    sText_AnimePikachuPage2_IT,
+};
+static const u8 sText_AnimePikachuPage3_ES[] = _("En tu aventura, esperamos\nque conozcas a todo tipo\nde gente y crezcas como persona.\nEse es nuestro mayor objetivo.\n\nPulsa el Botón A y que\ncomience tu aventura!$");
+static const u8 sText_AnimePikachuPage3_EN[] = _("Through your adventure, we hope\nthat you will interact with all sorts\nof people and achieve personal growth.\nThat is our biggest objective.\n\nPress the A Button, and let your\nadventure begin!$");
+static const u8 sText_AnimePikachuPage3_PT[] = _("Na tua aventura, esperamos\nque convivas com todo o tipo\nde pessoas e crescas como pessoa.\nEsse e o nosso maior objetivo.\n\nPrime o Botao A e que\ncomece a tua aventura!$");
+static const u8 sText_AnimePikachuPage3_IT[] = _("Nella tua avventura, speriamo\nche tu interagisca con ogni tipo\ndi persona e cresca interiormente.\nQuesto è il nostro obiettivo.\n\nPremi il Pulsante A e che\nla tua avventura abbia inizio!$");
+static const u8 *const sAnimePikachuPage3[] = {
+    sText_AnimePikachuPage3_ES,
+    sText_AnimePikachuPage3_EN,
+    sText_AnimePikachuPage3_PT,
+    sText_AnimePikachuPage3_IT,
+};
+static const u8 sText_AnimeControlsIntro_ES[] = _("Se explicarán los botones\npor orden de importancia.$");
+static const u8 sText_AnimeControlsIntro_EN[] = _("The various buttons will be explained in\nthe order of their importance.$");
+static const u8 sText_AnimeControlsIntro_PT[] = _("Os varios botoes serao explicados\npor ordem de importancia.$");
+static const u8 sText_AnimeControlsIntro_IT[] = _("I vari pulsanti saranno spiegati\nin ordine di importanza.$");
+static const u8 *const sAnimeControlsIntro[] = {
+    sText_AnimeControlsIntro_ES,
+    sText_AnimeControlsIntro_EN,
+    sText_AnimeControlsIntro_PT,
+    sText_AnimeControlsIntro_IT,
+};
+static const u8 sText_AnimeControlsDPad_ES[] = _("Mueve al personaje.\nTambién sirve para elegir\nvarias opciones.$");
+static const u8 sText_AnimeControlsDPad_EN[] = _("Moves the main character.\nAlso used to choose various data\nheadings.$");
+static const u8 sText_AnimeControlsDPad_PT[] = _("Move a personagem principal.\nTambem serve para escolher\nvarias opcoes.$");
+static const u8 sText_AnimeControlsDPad_IT[] = _("Muove il personaggio.\nServe anche a scegliere\nvarie opzioni.$");
+static const u8 *const sAnimeControlsDPad[] = {
+    sText_AnimeControlsDPad_ES,
+    sText_AnimeControlsDPad_EN,
+    sText_AnimeControlsDPad_PT,
+    sText_AnimeControlsDPad_IT,
+};
+static const u8 sText_AnimeControlsA_ES[] = _("Confirma, examina, habla\ny pasa el texto.$");
+static const u8 sText_AnimeControlsA_EN[] = _("Used to confirm a choice, check\nthings, chat, and scroll text.$");
+static const u8 sText_AnimeControlsA_PT[] = _("Confirma escolhas, examina,\nfala e avanca o texto.$");
+static const u8 sText_AnimeControlsA_IT[] = _("Conferma, esamina, parla\ne scorre il testo.$");
+static const u8 *const sAnimeControlsAButton[] = {
+    sText_AnimeControlsA_ES,
+    sText_AnimeControlsA_EN,
+    sText_AnimeControlsA_PT,
+    sText_AnimeControlsA_IT,
+};
+static const u8 sText_AnimeControlsB_ES[] = _("Sale, cancela opciones\ny cancela modos.$");
+static const u8 sText_AnimeControlsB_EN[] = _("Used to exit, cancel a choice,\nand cancel a mode.$");
+static const u8 sText_AnimeControlsB_PT[] = _("Sai, cancela escolhas\ne cancela modos.$");
+static const u8 sText_AnimeControlsB_IT[] = _("Esce, annulla le scelte\ne annulla la modalita.$");
+static const u8 *const sAnimeControlsBButton[] = {
+    sText_AnimeControlsB_ES,
+    sText_AnimeControlsB_EN,
+    sText_AnimeControlsB_PT,
+    sText_AnimeControlsB_IT,
+};
+static const u8 sText_AnimeControlsStart_ES[] = _("Abre el MENÚ con\neste botón.$");
+static const u8 sText_AnimeControlsStart_EN[] = _("Press this button to open the\nMENU.$");
+static const u8 sText_AnimeControlsStart_PT[] = _("Abre o MENU com\neste botao.$");
+static const u8 sText_AnimeControlsStart_IT[] = _("Apre il MENU con\nquesto pulsante.$");
+static const u8 *const sAnimeControlsStart[] = {
+    sText_AnimeControlsStart_ES,
+    sText_AnimeControlsStart_EN,
+    sText_AnimeControlsStart_PT,
+    sText_AnimeControlsStart_IT,
+};
+static const u8 sText_AnimeControlsSelect_ES[] = _("Mueve objetos y usa\nel objeto registrado.$");
+static const u8 sText_AnimeControlsSelect_EN[] = _("Used to shift items and to use\na registered item.$");
+static const u8 sText_AnimeControlsSelect_PT[] = _("Move objetos e usa\no objeto registado.$");
+static const u8 sText_AnimeControlsSelect_IT[] = _("Sposta oggetti e usa\nl'oggetto assegnato.$");
+static const u8 *const sAnimeControlsSelect[] = {
+    sText_AnimeControlsSelect_ES,
+    sText_AnimeControlsSelect_EN,
+    sText_AnimeControlsSelect_PT,
+    sText_AnimeControlsSelect_IT,
+};
+static const u8 sText_AnimeControlsLR_ES[] = _("Si necesitas ayuda, pulsa\nel Botón L o el Botón R.$");
+static const u8 sText_AnimeControlsLR_EN[] = _("If you need help playing the\ngame, or on how to do things,\npress the L or R Button.$");
+static const u8 sText_AnimeControlsLR_PT[] = _("Se precisares de ajuda,\nprime o Botao L ou o Botao R.$");
+static const u8 sText_AnimeControlsLR_IT[] = _("Se ti serve aiuto, premi\nil Pulsante L o R.$");
+static const u8 *const sAnimeControlsLR[] = {
+    sText_AnimeControlsLR_ES,
+    sText_AnimeControlsLR_EN,
+    sText_AnimeControlsLR_PT,
+    sText_AnimeControlsLR_IT,
+};
+static const u8 sText_AnimeDefaultBoyName[] = _("ASH");
+static const u8 sText_AnimeDefaultGirlName[] = _("HOJA");
+static const u8 sText_AnimeRivalFixedName[] = _("GARY");
+
+// Pokemon Anime Edition: pick the index/string for the boot language.
+static u8 AnimeOakLangIndex(void)
 {
-    [PIKACHU_INTRO_PAGE_1] = gPikachuIntro_Text_Page1,
-    [PIKACHU_INTRO_PAGE_2] = gPikachuIntro_Text_Page2,
-    [PIKACHU_INTRO_PAGE_3] = gPikachuIntro_Text_Page3
+    u8 lang = gSelectedBootLanguage & 3;
+    return (lang < 4) ? lang : 0;
+}
+static const u8 *AnimeOakLangText(const u8 *const *table)
+{
+    return table[AnimeOakLangIndex()];
+}
+static const u8 *const *const sAnimePikachuPages[] = {
+    sAnimePikachuPage1,
+    sAnimePikachuPage2,
+    sAnimePikachuPage3,
 };
 
 #define GFX_TAG_PLATFORM     0x1000
@@ -578,91 +802,43 @@ static const struct SpriteTemplate sPikachuIntro_Pikachu_SpriteTemplates[NUM_PIK
 
 #define CONTROLS_GUIDE_STRINGS_PER_PAGE 3
 
-static const u8 *const sControlsGuide_Pages2And3_Strings[CONTROLS_GUIDE_STRINGS_PER_PAGE * 2] =
-{
+static const u8 *const sAnimeControlsPages[][CONTROLS_GUIDE_STRINGS_PER_PAGE * 2] = {
     // Page 2
-    gControlsGuide_Text_DPad,
-    gControlsGuide_Text_AButton,
-    gControlsGuide_Text_BButton,
-    // Page 3
-    gControlsGuide_Text_StartButton,
-    gControlsGuide_Text_SelectButton,
-    gControlsGuide_Text_LRButtons
+    {
+        sText_AnimeControlsDPad_ES,
+        sText_AnimeControlsA_ES,
+        sText_AnimeControlsB_ES,
+        // Page 3
+        sText_AnimeControlsStart_ES,
+        sText_AnimeControlsSelect_ES,
+        sText_AnimeControlsLR_ES,
+    },
+    {
+        gControlsGuide_Text_DPad,
+        gControlsGuide_Text_AButton,
+        gControlsGuide_Text_BButton,
+        gControlsGuide_Text_StartButton,
+        gControlsGuide_Text_SelectButton,
+        gControlsGuide_Text_LRButtons,
+    },
+    {
+        sText_AnimeControlsDPad_PT,
+        sText_AnimeControlsA_PT,
+        sText_AnimeControlsB_PT,
+        sText_AnimeControlsStart_PT,
+        sText_AnimeControlsSelect_PT,
+        sText_AnimeControlsLR_PT,
+    },
+    {
+        sText_AnimeControlsDPad_IT,
+        sText_AnimeControlsA_IT,
+        sText_AnimeControlsB_IT,
+        sText_AnimeControlsStart_IT,
+        sText_AnimeControlsSelect_IT,
+        sText_AnimeControlsLR_IT,
+    },
 };
 
-static const u8 *const sMaleNameChoices[] =
-{
-#if defined(FIRERED)
-    gNameChoice_Red,
-    gNameChoice_Fire,
-    gNameChoice_Ash,
-    gNameChoice_Kene,
-    gNameChoice_Geki,
-#else
-    gNameChoice_Green,
-    gNameChoice_Leaf,
-    gNameChoice_Gary,
-    gNameChoice_Kaz,
-    gNameChoice_Toru,
-#endif
-    gNameChoice_Jak,
-    gNameChoice_Janne,
-    gNameChoice_Jonn,
-    gNameChoice_Kamon,
-    gNameChoice_Karl,
-    gNameChoice_Taylor,
-    gNameChoice_Oscar,
-    gNameChoice_Hiro,
-    gNameChoice_Max,
-    gNameChoice_Jon,
-    gNameChoice_Ralph,
-    gNameChoice_Kay,
-    gNameChoice_Tosh,
-    gNameChoice_Roak
-};
-
-static const u8 *const sFemaleNameChoices[] =
-{
-#if defined(FIRERED)
-    gNameChoice_Red,
-    gNameChoice_Fire,
-#else
-    gNameChoice_Green,
-    gNameChoice_Leaf,
-#endif
-    gNameChoice_Omi,
-    gNameChoice_Jodi,
-    gNameChoice_Amanda,
-    gNameChoice_Hillary,
-    gNameChoice_Makey,
-    gNameChoice_Michi,
-    gNameChoice_Paula,
-    gNameChoice_June,
-    gNameChoice_Cassie,
-    gNameChoice_Rey,
-    gNameChoice_Seda,
-    gNameChoice_Kiko,
-    gNameChoice_Mina,
-    gNameChoice_Norie,
-    gNameChoice_Sai,
-    gNameChoice_Momo,
-    gNameChoice_Suzi
-};
-
-static const u8 *const sRivalNameChoices[] =
-{
-#if defined(FIRERED)
-    gNameChoice_Green,
-    gNameChoice_Gary,
-    gNameChoice_Kaz,
-    gNameChoice_Toru
-#else
-    gNameChoice_Red,
-    gNameChoice_Ash,
-    gNameChoice_Kene,
-    gNameChoice_Geki
-#endif
-};
 
 enum
 {
@@ -688,7 +864,7 @@ static void CB2_NewGameScene(void)
     UpdatePaletteFade();
 }
 
-void StartNewGameSceneFrlg(void)
+void StartNewGameSceneAnime(void)
 {
     gPlttBufferUnfaded[0] = RGB_BLACK;
     gPlttBufferFaded[0]   = RGB_BLACK;
@@ -804,7 +980,7 @@ static void ControlsGuide_LoadPage1(void)
     sOakSpeechResources->windowIds[0] = AddWindow(sControlsGuide_WindowTemplates[sOakSpeechResources->currentPage]);
     PutWindowTilemap(sOakSpeechResources->windowIds[0]);
     FillWindowPixelBuffer(sOakSpeechResources->windowIds[0], PIXEL_FILL(0));
-    AddTextPrinterParameterized4(sOakSpeechResources->windowIds[0], FONT_NORMAL, 2, 0, 1, 1, sTextColor_White, 0, gControlsGuide_Text_Intro);
+    AddTextPrinterParameterized4(sOakSpeechResources->windowIds[0], FONT_NORMAL, 2, 0, 1, 1, sTextColor_White, 0, AnimeOakLangText(sAnimeControlsIntro));
     CopyWindowToVram(sOakSpeechResources->windowIds[0], COPYWIN_FULL);
     FillBgTilemapBufferRect_Palette0(1, 0x3000, 1, 3, 5, 16);
     CopyBgTilemapBufferToVram(1);
@@ -826,7 +1002,7 @@ static void Task_ControlsGuide_LoadPage(u8 taskId)
             sOakSpeechResources->windowIds[currWindow] = AddWindow(&sControlsGuide_WindowTemplates[sOakSpeechResources->currentPage][currWindow]);
             PutWindowTilemap(sOakSpeechResources->windowIds[currWindow]);
             FillWindowPixelBuffer(sOakSpeechResources->windowIds[currWindow], PIXEL_FILL(0));
-            AddTextPrinterParameterized4(sOakSpeechResources->windowIds[currWindow], FONT_NORMAL, 6, 0, 1, 1, sTextColor_White, 0, sControlsGuide_Pages2And3_Strings[currWindow + page2Or3 * CONTROLS_GUIDE_STRINGS_PER_PAGE]);
+            AddTextPrinterParameterized4(sOakSpeechResources->windowIds[currWindow], FONT_NORMAL, 6, 0, 1, 1, sTextColor_White, 0, sAnimeControlsPages[AnimeOakLangIndex()][currWindow + page2Or3 * CONTROLS_GUIDE_STRINGS_PER_PAGE]);
             CopyWindowToVram(sOakSpeechResources->windowIds[currWindow], COPYWIN_FULL);
         }
 
@@ -968,7 +1144,7 @@ static void Task_PikachuIntro_LoadPage1(u8 taskId)
         sOakSpeechResources->currentPage = PIKACHU_INTRO_PAGE_1;
         gMain.state = PIKACHU_INTRO_SET_GPU_REGS;
         tBlendTarget = 16;
-        AddTextPrinterParameterized4(tTextboxWindowId, FONT_NORMAL, 3, 5, 1, 0, sTextColor_DarkGray, 0, sPikachuIntro_Strings[PIKACHU_INTRO_PAGE_1]);
+        AddTextPrinterParameterized4(tTextboxWindowId, FONT_NORMAL, 3, 5, 1, 0, sTextColor_DarkGray, 0, sAnimePikachuPages[PIKACHU_INTRO_PAGE_1][AnimeOakLangIndex()]);
         tTextCursorSpriteId = CreateTextCursorSprite(0, 226, 145, 0, 0);
         gSprites[tTextCursorSpriteId].oam.objMode = ST_OAM_OBJ_BLEND;
         gSprites[tTextCursorSpriteId].oam.priority = 0;
@@ -1027,7 +1203,7 @@ static void Task_PikachuIntro_HandleInput(u8 taskId)
         if (tBlendTarget <= 0)
         {
             FillWindowPixelBuffer(tTextboxWindowId, PIXEL_FILL(0));
-            AddTextPrinterParameterized4(tTextboxWindowId, FONT_NORMAL, 3, 5, 1, 0, sTextColor_DarkGray, 0, sPikachuIntro_Strings[sOakSpeechResources->currentPage]);
+            AddTextPrinterParameterized4(tTextboxWindowId, FONT_NORMAL, 3, 5, 1, 0, sTextColor_DarkGray, 0, sAnimePikachuPages[sOakSpeechResources->currentPage][AnimeOakLangIndex()]);
             if (sOakSpeechResources->currentPage == PIKACHU_INTRO_PAGE_1)
             {
                 HofPCTopBar_Clear();
@@ -1151,7 +1327,7 @@ static void Task_OakSpeech_WelcomeToTheWorld(u8 taskId)
         }
         else
         {
-            OakSpeechPrintMessage(gOakSpeech_Text_WelcomeToTheWorld, sOakSpeechResources->textSpeed, FALSE);
+            OakSpeechPrintMessage(AnimeOakLangText(sAnimeOakWelcome), sOakSpeechResources->textSpeed, FALSE);
             gTasks[taskId].func = Task_OakSpeech_ThisWorld;
         }
     }
@@ -1161,7 +1337,7 @@ static void Task_OakSpeech_ThisWorld(u8 taskId)
 {
     if (!IsTextPrinterActiveOnWindow(WIN_INTRO_TEXTBOX))
     {
-        OakSpeechPrintMessage(gOakSpeech_Text_ThisWorld, sOakSpeechResources->textSpeed, FALSE);
+        OakSpeechPrintMessage(AnimeOakLangText(sAnimeOakThisWorld), sOakSpeechResources->textSpeed, FALSE);
         gTasks[taskId].tTimer = 30;
         gTasks[taskId].func = Task_OakSpeech_ReleaseNidoranFFromPokeBall;
     }
@@ -1197,7 +1373,7 @@ static void Task_OakSpeech_IsInhabitedFarAndWide(u8 taskId)
         gTasks[taskId].tTimer++;
         if (gTasks[taskId].tTimer == 32)
         {
-            OakSpeechPrintMessage(gOakSpeech_Text_IsInhabitedFarAndWide, sOakSpeechResources->textSpeed, FALSE);
+            OakSpeechPrintMessage(AnimeOakLangText(sAnimeOakInhabited), sOakSpeechResources->textSpeed, FALSE);
             PlayCry_Normal(INTRO_SPECIES, 0);
         }
     }
@@ -1207,7 +1383,7 @@ static void Task_OakSpeech_IStudyPokemon(u8 taskId)
 {
     if (!IsTextPrinterActiveOnWindow(WIN_INTRO_TEXTBOX))
     {
-        OakSpeechPrintMessage(gOakSpeech_Text_IStudyPokemon, sOakSpeechResources->textSpeed, FALSE);
+        OakSpeechPrintMessage(AnimeOakLangText(sAnimeOakStudy), sOakSpeechResources->textSpeed, FALSE);
         gTasks[taskId].func = Task_OakSpeech_ReturnNidoranFToPokeBall;
     }
 }
@@ -1250,7 +1426,7 @@ static void Task_OakSpeech_TellMeALittleAboutYourself(u8 taskId)
         }
         else
         {
-            OakSpeechPrintMessage(gOakSpeech_Text_TellMeALittleAboutYourself, sOakSpeechResources->textSpeed, FALSE);
+            OakSpeechPrintMessage(AnimeOakLangText(sAnimeOakTellMe), sOakSpeechResources->textSpeed, FALSE);
             gTasks[taskId].func = Task_OakSpeech_FadeOutOak;
         }
     }
@@ -1283,7 +1459,7 @@ static void Task_OakSpeech_AskPlayerGender(u8 taskId)
         {
             tTrainerPicPosX = -60;
             ClearTrainerPic();
-            OakSpeechPrintMessage(gOakSpeech_Text_AskPlayerGender, sOakSpeechResources->textSpeed, FALSE);
+            OakSpeechPrintMessage(AnimeOakLangText(sAnimeOakAskGender), sOakSpeechResources->textSpeed, FALSE);
             gTasks[taskId].func = Task_OakSpeech_ShowGenderOptions;
         }
     }
@@ -1300,11 +1476,11 @@ static void Task_OakSpeech_ShowGenderOptions(u8 taskId)
         sOakSpeechResources->textColor[0] = 1;
         sOakSpeechResources->textColor[1] = 2;
         sOakSpeechResources->textColor[2] = 3;
-        AddTextPrinterParameterized3(gTasks[taskId].tMenuWindowId, FONT_NORMAL, 8, 1, sOakSpeechResources->textColor, 0, gText_Boy);
+        AddTextPrinterParameterized3(gTasks[taskId].tMenuWindowId, FONT_NORMAL, 8, 1, sOakSpeechResources->textColor, 0, AnimeOakLangText(sAnimeOakBoy));
         sOakSpeechResources->textColor[0] = 1;
         sOakSpeechResources->textColor[1] = 2;
         sOakSpeechResources->textColor[2] = 3;
-        AddTextPrinterParameterized3(gTasks[taskId].tMenuWindowId, FONT_NORMAL, 8, 17, sOakSpeechResources->textColor, 0, gText_Girl);
+        AddTextPrinterParameterized3(gTasks[taskId].tMenuWindowId, FONT_NORMAL, 8, 17, sOakSpeechResources->textColor, 0, AnimeOakLangText(sAnimeOakGirl));
         InitMenuNormal(gTasks[taskId].tMenuWindowId, FONT_NORMAL, 0, 1, GetFontAttribute(FONT_NORMAL, FONTATTR_MAX_LETTER_HEIGHT) + 2, 2, 0);
         CopyWindowToVram(gTasks[taskId].tMenuWindowId, COPYWIN_FULL);
         gTasks[taskId].func = Task_OakSpeech_HandleGenderInput;
@@ -1318,9 +1494,11 @@ static void Task_OakSpeech_HandleGenderInput(u8 taskId)
     {
     case 0: // BOY
         gSaveBlock2Ptr->playerGender = MALE;
+        gSelectedBootGender = MALE;
         break;
     case 1: // GIRL
         gSaveBlock2Ptr->playerGender = FEMALE;
+        gSelectedBootGender = FEMALE;
         break;
     case MENU_B_PRESSED:
     case MENU_NOTHING_CHOSEN:
@@ -1366,7 +1544,7 @@ static void Task_OakSpeech_YourNameWhatIsIt(u8 taskId)
         else
         {
             tTrainerPicPosX = 0;
-            OakSpeechPrintMessage(gOakSpeech_Text_YourNameWhatIsIt, sOakSpeechResources->textSpeed, FALSE);
+            OakSpeechPrintMessage(AnimeOakLangText(sAnimeOakYourName), sOakSpeechResources->textSpeed, FALSE);
             gTasks[taskId].func = Task_OakSpeech_FadeOutForPlayerNamingScreen;
         }
     }
@@ -1382,81 +1560,22 @@ static void Task_OakSpeech_FadeOutForPlayerNamingScreen(u8 taskId)
     }
 }
 
-static void Task_OakSpeech_MoveRivalDisplayNameOptions(u8 taskId)
-{
-    s16 *data = gTasks[taskId].data;
 
-    if (!IsTextPrinterActiveOnWindow(WIN_INTRO_TEXTBOX))
-    {
-        if (tTrainerPicPosX > -60)
-        {
-            tTrainerPicPosX -= 2;
-            gSpriteCoordOffsetX += 2;
-            ChangeBgX(2, 0x200, BG_COORD_SUB);
-        }
-        else
-        {
-            tTrainerPicPosX = -60;
-            PrintNameChoiceOptions(taskId, sOakSpeechResources->hasPlayerBeenNamed);
-            gTasks[taskId].func = Task_OakSpeech_HandleRivalNameInput;
-        }
-    }
-}
-
-static void Task_OakSpeech_RepeatNameQuestion(u8 taskId)
-{
-    PrintNameChoiceOptions(taskId, sOakSpeechResources->hasPlayerBeenNamed);
-    if (sOakSpeechResources->hasPlayerBeenNamed == FALSE)
-        OakSpeechPrintMessage(gOakSpeech_Text_YourNameWhatIsIt, 0, FALSE);
-    else
-        OakSpeechPrintMessage(gOakSpeech_Text_YourRivalsNameWhatWasIt, 0, FALSE);
-    gTasks[taskId].func = Task_OakSpeech_HandleRivalNameInput;
-}
 
 #define tNameNotConfirmed data[15]
 
-static void Task_OakSpeech_HandleRivalNameInput(u8 taskId)
-{
-    s16 *data = gTasks[taskId].data;
-    s8 input = Menu_ProcessInput();
-    switch (input)
-    {
-    case 0: // NEW NAME
-        PlaySE(SE_SELECT);
-        BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
-        gTasks[taskId].func = Task_OakSpeech_DoNamingScreen;
-        break;
-    case 1: // Default name options
-    case 2: //
-    case 3: //
-    case 4: //
-        PlaySE(SE_SELECT);
-        ClearStdWindowAndFrameToTransparent(tMenuWindowId, TRUE);
-        RemoveWindow(tMenuWindowId);
-        GetDefaultName(sOakSpeechResources->hasPlayerBeenNamed, input - 1);
-        tNameNotConfirmed = TRUE;
-        gTasks[taskId].func = Task_OakSpeech_ConfirmName;
-        break;
-    case MENU_B_PRESSED:
-        break;
-    }
-}
 
 static void Task_OakSpeech_DoNamingScreen(u8 taskId)
 {
     if (!gPaletteFade.active)
     {
-        GetDefaultName(sOakSpeechResources->hasPlayerBeenNamed, 0);
-        if (sOakSpeechResources->hasPlayerBeenNamed == FALSE)
-        {
-            DoNamingScreen(NAMING_SCREEN_PLAYER, gSaveBlock2Ptr->playerName, gSaveBlock2Ptr->playerGender, 0, 0, CB2_ReturnFromNamingScreen);
-        }
+        // Pokemon Anime Edition: pre-fill ASH (boy) or HOJA (girl); the
+        // player may keep it or type their own name.
+        if (gSaveBlock2Ptr->playerGender == MALE)
+            StringCopy(gSaveBlock2Ptr->playerName, sText_AnimeDefaultBoyName);
         else
-        {
-            ClearStdWindowAndFrameToTransparent(gTasks[taskId].tMenuWindowId, TRUE);
-            RemoveWindow(gTasks[taskId].tMenuWindowId);
-            DoNamingScreen(NAMING_SCREEN_RIVAL, gSaveBlock1Ptr->rivalName, 0, 0, 0, CB2_ReturnFromNamingScreen);
-        }
+            StringCopy(gSaveBlock2Ptr->playerName, sText_AnimeDefaultGirlName);
+        DoNamingScreen(NAMING_SCREEN_PLAYER, gSaveBlock2Ptr->playerName, gSaveBlock2Ptr->playerGender, 0, 0, CB2_ReturnFromNamingScreen);
         DestroyPikachuOrPlatformSprites(taskId, SPRITE_TYPE_PLATFORM);
         FreeAllWindowBuffers();
     }
@@ -1469,10 +1588,7 @@ static void Task_OakSpeech_ConfirmName(u8 taskId)
     {
         if (tNameNotConfirmed == TRUE)
         {
-            if (sOakSpeechResources->hasPlayerBeenNamed == FALSE)
-                StringExpandPlaceholders(gStringVar4, gOakSpeech_Text_SoYourNameIsPlayer);
-            else
-                StringExpandPlaceholders(gStringVar4, gOakSpeech_Text_ConfirmRivalName);
+            StringExpandPlaceholders(gStringVar4, AnimeOakLangText(sAnimeOakSoYourName));
             OakSpeechPrintMessage(gStringVar4, sOakSpeechResources->textSpeed, TRUE);
             tNameNotConfirmed = FALSE;
             tTimer = 25;
@@ -1500,26 +1616,18 @@ static void Task_OakSpeech_HandleConfirmNameInput(u8 taskId)
     case 0: // YES
         PlaySE(SE_SELECT);
         gTasks[taskId].tTimer = 40;
-        if (sOakSpeechResources->hasPlayerBeenNamed == FALSE)
-        {
-            ClearDialogWindowAndFrame(WIN_INTRO_TEXTBOX, TRUE);
-            CreateFadeInTask(taskId, 2);
-            gTasks[taskId].func = Task_OakSpeech_FadeOutPlayerPic;
-        }
-        else
-        {
-            StringExpandPlaceholders(gStringVar4, gOakSpeech_Text_RememberRivalsName);
-            OakSpeechPrintMessage(gStringVar4, sOakSpeechResources->textSpeed, TRUE);
-            gTasks[taskId].func = Task_OakSpeech_FadeOutRivalPic;
-        }
+        // Pokemon Anime Edition: keep the confirmed name for NewGameInitData
+        // and fix the rival as GARY (the rival naming screen is skipped).
+        StringCopy(gSelectedBootName, gSaveBlock2Ptr->playerName);
+        StringCopy(gSaveBlock1Ptr->rivalName, sText_AnimeRivalFixedName);
+        ClearDialogWindowAndFrame(WIN_INTRO_TEXTBOX, TRUE);
+        CreateFadeInTask(taskId, 2);
+        gTasks[taskId].func = Task_OakSpeech_FadeOutPlayerPic;
         break;
     case 1: // NO
     case MENU_B_PRESSED:
         PlaySE(SE_SELECT);
-        if (sOakSpeechResources->hasPlayerBeenNamed == FALSE)
-            gTasks[taskId].func = Task_OakSpeech_FadeOutForPlayerNamingScreen;
-        else
-            gTasks[taskId].func = Task_OakSpeech_RepeatNameQuestion;
+        gTasks[taskId].func = Task_OakSpeech_FadeOutForPlayerNamingScreen;
         break;
     }
 }
@@ -1534,41 +1642,11 @@ static void Task_OakSpeech_FadeOutPlayerPic(u8 taskId)
         if (tTimer != 0)
             tTimer--;
         else
-            gTasks[taskId].func = Task_OakSpeech_FadeInRivalPic;
+            gTasks[taskId].func = Task_OakSpeech_ReshowPlayersPic;
     }
 }
 
-static void Task_OakSpeech_FadeOutRivalPic(u8 taskId)
-{
-    if (!IsTextPrinterActiveOnWindow(WIN_INTRO_TEXTBOX))
-    {
-        ClearDialogWindowAndFrame(WIN_INTRO_TEXTBOX, TRUE);
-        CreateFadeInTask(taskId, 2);
-        gTasks[taskId].func = Task_OakSpeech_ReshowPlayersPic;
-    }
-}
 
-static void Task_OakSpeech_FadeInRivalPic(u8 taskId)
-{
-    ChangeBgX(2, 0, BG_COORD_SET);
-    gTasks[taskId].tTrainerPicPosX = 0;
-    gSpriteCoordOffsetX = 0;
-    LoadTrainerPic(RIVAL_PIC, 0);
-    CreateFadeOutTask(taskId, 2);
-    gTasks[taskId].func = Task_OakSpeech_AskRivalsName;
-}
-
-static void Task_OakSpeech_AskRivalsName(u8 taskId)
-{
-    s16 *data = gTasks[taskId].data;
-
-    if (tTrainerPicFadeState != 0)
-    {
-        OakSpeechPrintMessage(gOakSpeech_Text_WhatWasHisName, sOakSpeechResources->textSpeed, FALSE);
-        sOakSpeechResources->hasPlayerBeenNamed = TRUE;
-        gTasks[taskId].func = Task_OakSpeech_MoveRivalDisplayNameOptions;
-    }
-}
 
 static void Task_OakSpeech_ReshowPlayersPic(u8 taskId)
 {
@@ -1600,7 +1678,7 @@ static void Task_OakSpeech_LetsGo(u8 taskId)
 {
     if (gTasks[taskId].tTrainerPicFadeState != 0)
     {
-        StringExpandPlaceholders(gStringVar4, gOakSpeech_Text_LetsGo);
+        StringExpandPlaceholders(gStringVar4, AnimeOakLangText(sAnimeOakLetsGo));
         OakSpeechPrintMessage(gStringVar4, sOakSpeechResources->textSpeed, TRUE);
         gTasks[taskId].tTimer = 30;
         gTasks[taskId].func = Task_OakSpeech_FadeOutBGM;
@@ -1852,17 +1930,10 @@ static void CB2_ReturnFromNamingScreen(void)
         break;
     case 6:
         taskId = CreateTask(Task_OakSpeech_ConfirmName, 0);
-        if (sOakSpeechResources->hasPlayerBeenNamed == FALSE)
-        {
-            if (gSaveBlock2Ptr->playerGender == MALE)
-                LoadTrainerPic(MALE_PLAYER_PIC, 0);
-            else
-                LoadTrainerPic(FEMALE_PLAYER_PIC, 0);
-        }
+        if (gSaveBlock2Ptr->playerGender == MALE)
+            LoadTrainerPic(MALE_PLAYER_PIC, 0);
         else
-        {
-            LoadTrainerPic(RIVAL_PIC, 0);
-        }
+            LoadTrainerPic(FEMALE_PLAYER_PIC, 0);
         gTasks[taskId].tTrainerPicPosX = -60;
         gSpriteCoordOffsetX += 60;
         ChangeBgX(2, 0xFFFFC400, BG_COORD_SET);
@@ -2119,50 +2190,7 @@ static void CreateFadeOutTask(u8 taskId, u8 delay)
         gTasks[taskId2].tPikachuPlatformSpriteId(i) = gTasks[taskId].tPikachuPlatformSpriteId(i);
 }
 
-static void PrintNameChoiceOptions(u8 taskId, u8 hasPlayerBeenNamed)
-{
-    s16 *data = gTasks[taskId].data;
-    const u8 *const *textPtrs;
-    u8 i;
 
-    tMenuWindowId = AddWindow(&sIntro_WindowTemplates[WIN_INTRO_NAMES]);
-    PutWindowTilemap(tMenuWindowId);
-    DrawStdFrameWithCustomTileAndPalette(tMenuWindowId, 1, STD_WINDOW_BASE_TILE_NUM, 14);
-    FillWindowPixelBuffer(gTasks[taskId].tMenuWindowId, PIXEL_FILL(1));
-    AddTextPrinterParameterized(tMenuWindowId, FONT_NORMAL, gOtherText_NewName, 8, 1, 0, NULL);
-    if (hasPlayerBeenNamed == FALSE)
-        textPtrs = gSaveBlock2Ptr->playerGender == MALE ? sMaleNameChoices : sFemaleNameChoices;
-    else
-        textPtrs = sRivalNameChoices;
-    for (i = 0; i < ARRAY_COUNT(sRivalNameChoices); i++)
-        AddTextPrinterParameterized(tMenuWindowId, FONT_NORMAL, textPtrs[i], 8, 16 * (i + 1) + 1, 0, NULL);
-    InitMenuNormal(tMenuWindowId, FONT_NORMAL, 0, 1, 16, 5, 0);
-    CopyWindowToVram(tMenuWindowId, COPYWIN_FULL);
-}
-
-static void GetDefaultName(u8 hasPlayerBeenNamed, u8 nameChoice)
-{
-    const u8 *src;
-    u8 *dest;
-    u8 i;
-    if (hasPlayerBeenNamed == FALSE)
-    {
-        if (gSaveBlock2Ptr->playerGender == MALE)
-            src = sMaleNameChoices[Random() % ARRAY_COUNT(sMaleNameChoices)];
-        else
-            src = sFemaleNameChoices[Random() % ARRAY_COUNT(sFemaleNameChoices)];
-        dest = gSaveBlock2Ptr->playerName;
-    }
-    else
-    {
-        src = sRivalNameChoices[nameChoice];
-        dest = gSaveBlock1Ptr->rivalName;
-    }
-    for (i = 0; i < PLAYER_NAME_LENGTH && src[i] != EOS; i++)
-        dest[i] = src[i];
-    for (; i < PLAYER_NAME_LENGTH + 1; i++)
-        dest[i] = EOS;
-}
 
 #undef tSpriteTimer
 #undef tTrainerPicPosX
@@ -2190,4 +2218,4 @@ static void GetDefaultName(u8 hasPlayerBeenNamed, u8 nameChoice)
 #undef tUnusedState
 #undef tFadeTimer
 
-#endif // IS_FRLG
+#endif

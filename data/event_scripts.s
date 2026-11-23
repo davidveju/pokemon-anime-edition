@@ -600,7 +600,9 @@ gStdScripts_End::
 	.include "data/maps/Route119_House/scripts.inc"
 	.include "data/maps/Route124_DivingTreasureHuntersHouse/scripts.inc"
 
-.if IS_FRLG
+@ Pokemon Anime Edition: Kanto (FRLG) scripts are always assembled,
+@ even in the Emerald-based combined Hoenn + Kanto build.
+.if 1
 
 @ FRLG scripts
 	.include "data/maps/BattleColosseum_2P_Frlg/scripts.inc"

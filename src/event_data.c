@@ -254,3 +254,28 @@ bool8 FlagGet(u16 id)
 
     return TRUE;
 }
+
+// Pokemon Anime Edition: boot language encoded in 2 flags.
+// 0 = ES, 1 = EN, 2 = PT, 3 = IT.
+u8 GetAnimeLanguage(void)
+{
+    u8 lang = 0;
+    if (FlagGet(FLAG_ANIME_LANG_BIT0))
+        lang |= 1;
+    if (FlagGet(FLAG_ANIME_LANG_BIT1))
+        lang |= 2;
+    return lang;
+}
+
+// Pokemon Anime Edition: store the boot language into its 2 flags.
+void SetAnimeLanguage(u8 lang)
+{
+    if (lang & 1)
+        FlagSet(FLAG_ANIME_LANG_BIT0);
+    else
+        FlagClear(FLAG_ANIME_LANG_BIT0);
+    if (lang & 2)
+        FlagSet(FLAG_ANIME_LANG_BIT1);
+    else
+        FlagClear(FLAG_ANIME_LANG_BIT1);
+}

@@ -47,6 +47,7 @@
 #include "mirage_tower.h"
 #include "money.h"
 #include "new_game.h"
+#include "anime_boot.h"
 #include "oras_dowse.h"
 #include "palette.h"
 #include "play_time.h"
@@ -1941,10 +1942,10 @@ void CB2_NewGame(void)
     PlayTimeCounter_Start();
     ScriptContext_Init();
     UnlockPlayerFieldControls();
-    if (IS_FRLG)
-        gFieldCallback = FieldCB_WarpExitFadeFromBlack;
-    else
-        gFieldCallback = ExecuteTruckSequence;
+    // Pokemon Anime Edition: no truck intro in any version, warp straight to
+    // Pallet Town and fade in from black (the Pallet Town intro script waits
+    // for this fade with `delay 16`).
+    gFieldCallback = FieldCB_WarpExitFadeFromBlack;
     gFieldCallback2 = NULL;
     DoMapLoadLoop(&gMain.state);
     SetFieldVBlankCallback();
@@ -2122,6 +2123,9 @@ void CB2_ContinueSavedGame(void)
     FieldClearVBlankHBlankCallbacks();
     StopMapMusic();
     ResetSafariZoneFlag_();
+    // Pokemon Anime Edition: sync the boot language with the loaded save's
+    // language flags so the main menu and PC messages match the save.
+    gSelectedBootLanguage = GetAnimeLanguage();
     if (gSaveFileStatus == SAVE_STATUS_ERROR)
         ResetWinStreaks();
 

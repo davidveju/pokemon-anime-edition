@@ -35,8 +35,34 @@ PalletTown_EventScript_MoveSignLadyToRouteEntrance::
 	return
 
 PalletTown_OnFrame::
+	map_script_2 VAR_MAP_SCENE_PALLET_TOWN_OAK, 0, PalletTown_EventScript_AnimeIntro
 	map_script_2 VAR_MAP_SCENE_PALLET_TOWN_OAK, 2, PalletTown_EventScript_OakRatingScene
 	.2byte 0
+
+@ Pokemon Anime Edition (Phase 0): Oak hands the starter Pikachu to the
+@ player right in Pallet Town. Language, gender and name were already chosen
+@ in the boot flow. Runs once, then sets VAR_MAP_SCENE_PALLET_TOWN_OAK to 1.
+PalletTown_EventScript_AnimeIntro::
+	lockall
+	delay 16
+	clearflag FLAG_HIDE_OAK_IN_PALLET_TOWN
+	applymovement LOCALID_PALLET_PROF_OAK, Common_Movement_FacePlayer
+	applymovement LOCALID_PLAYER, Common_Movement_FaceUp
+	waitmovement 0
+	msgbox_i18n PalletTown_Text_AnimeOakGreeting_ES, PalletTown_Text_AnimeOakGreeting_EN, PalletTown_Text_AnimeOakGreeting_PT, PalletTown_Text_AnimeOakGreeting_IT
+	closemessage
+	givemon SPECIES_PIKACHU, 5
+	playfanfare MUS_LEVEL_UP
+	msgbox_i18n PalletTown_Text_AnimeReceivedPikachu_ES, PalletTown_Text_AnimeReceivedPikachu_EN, PalletTown_Text_AnimeReceivedPikachu_PT, PalletTown_Text_AnimeReceivedPikachu_IT
+	waitfanfare
+	closemessage
+	setflag FLAG_SYS_POKEMON_GET
+	setflag FLAG_ANIME_PIKACHU_RECEIVED
+	setflag FLAG_ANIME_PIKACHU_CANNOT_EVOLVE
+	setflag FLAG_ANIME_PIKACHU_CANNOT_DEPOSIT
+	setvar VAR_MAP_SCENE_PALLET_TOWN_OAK, 1
+	releaseall
+	end
 
 @ Oak approaches player after exiting their house post Elite Four to check if they should receieve the National Dex
 PalletTown_EventScript_OakRatingScene::
@@ -544,5 +570,47 @@ PalletTown_Text_LookCopiedTrainerTipsSign::
 PalletTown_Text_PressStartToOpenMenuCopy::
 	.string "TRAINER TIPS!\p"
 	.string "Press START to open the MENU!$"
+
+@ Pokemon Anime Edition: Oak hands Pikachu to the player (Phase 0 intro).
+@ Max 35 characters per line. Portuguese avoids tilde vowels (uses ao/AO).
+PalletTown_Text_AnimeOakGreeting_ES::
+	.string "OAK: ¡Hola! ¡Por fin despiertas!\n"
+	.string "Soy el Profesor Oak.\l"
+	.string "Este es Pikachu.\p"
+	.string "Cuídalo bien, ¿vale?$"
+
+PalletTown_Text_AnimeOakGreeting_EN::
+	.string "OAK: Hello! You are finally awake!\n"
+	.string "I am Professor Oak.\l"
+	.string "This is Pikachu.\p"
+	.string "Take good care of it, ok?$"
+
+PalletTown_Text_AnimeOakGreeting_PT::
+	.string "OAK: Ola! Finalmente acordaste!\n"
+	.string "Sou o Professor Oak.\l"
+	.string "Este e o Pikachu.\p"
+	.string "Cuida bem dele, esta bem?$"
+
+PalletTown_Text_AnimeOakGreeting_IT::
+	.string "OAK: Ciao! Ti sei svegliato!\n"
+	.string "Sono il Professor Oak.\l"
+	.string "Questo e Pikachu.\p"
+	.string "Prenditene cura, ok?$"
+
+PalletTown_Text_AnimeReceivedPikachu_ES::
+	.string "¡Pikachu se unió a tu equipo!\p"
+	.string "¡Juntos viviréis una gran aventura!$"
+
+PalletTown_Text_AnimeReceivedPikachu_EN::
+	.string "Pikachu joined your party!\p"
+	.string "A great adventure awaits you!$"
+
+PalletTown_Text_AnimeReceivedPikachu_PT::
+	.string "Pikachu juntou-se a ti!\p"
+	.string "Uma grande aventura espera-te!$"
+
+PalletTown_Text_AnimeReceivedPikachu_IT::
+	.string "Pikachu si e unito a te!\p"
+	.string "Una grande avventura vi aspetta!$"
 
 

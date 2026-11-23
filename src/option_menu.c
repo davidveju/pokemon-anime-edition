@@ -15,6 +15,8 @@
 #include "window.h"
 #include "gba/m4a_internal.h"
 #include "constants/rgb.h"
+#include "anime_boot.h"
+#include "event_data.h"
 
 #define tMenuSelection data[0]
 #define tTextSpeed data[1]
@@ -23,6 +25,7 @@
 #define tSound data[4]
 #define tButtonMode data[5]
 #define tWindowFrameType data[6]
+#define tLanguage data[7]
 
 enum
 {
@@ -32,6 +35,7 @@ enum
     MENUITEM_SOUND,
     MENUITEM_BUTTONMODE,
     MENUITEM_FRAMETYPE,
+    MENUITEM_LANGUAGE,
     MENUITEM_CANCEL,
     MENUITEM_COUNT,
 };
@@ -42,12 +46,16 @@ enum
     WIN_OPTIONS
 };
 
-#define YPOS_TEXTSPEED    (MENUITEM_TEXTSPEED * 16)
-#define YPOS_BATTLESCENE  (MENUITEM_BATTLESCENE * 16)
-#define YPOS_BATTLESTYLE  (MENUITEM_BATTLESTYLE * 16)
-#define YPOS_SOUND        (MENUITEM_SOUND * 16)
-#define YPOS_BUTTONMODE   (MENUITEM_BUTTONMODE * 16)
-#define YPOS_FRAMETYPE    (MENUITEM_FRAMETYPE * 16)
+// Pokemon Anime Edition: 8 rows (including LANGUAGE) share the 112px tall
+// options window, so each row is 14px tall.
+#define OPTION_MENU_ROW_H 14
+#define YPOS_TEXTSPEED    (MENUITEM_TEXTSPEED * OPTION_MENU_ROW_H)
+#define YPOS_BATTLESCENE  (MENUITEM_BATTLESCENE * OPTION_MENU_ROW_H)
+#define YPOS_BATTLESTYLE  (MENUITEM_BATTLESTYLE * OPTION_MENU_ROW_H)
+#define YPOS_SOUND        (MENUITEM_SOUND * OPTION_MENU_ROW_H)
+#define YPOS_BUTTONMODE   (MENUITEM_BUTTONMODE * OPTION_MENU_ROW_H)
+#define YPOS_FRAMETYPE    (MENUITEM_FRAMETYPE * OPTION_MENU_ROW_H)
+#define YPOS_LANGUAGE     (MENUITEM_LANGUAGE * OPTION_MENU_ROW_H)
 
 static void Task_OptionMenuFadeIn(u8 taskId);
 static void Task_OptionMenuProcessInput(u8 taskId);
@@ -64,6 +72,10 @@ static u8 Sound_ProcessInput(u8 selection);
 static void Sound_DrawChoices(u8 selection);
 static u8 FrameType_ProcessInput(u8 selection);
 static void FrameType_DrawChoices(u8 selection);
+static u8 Language_ProcessInput(u8 taskId, u8 selection);
+static void Language_DrawChoices(u8 selection);
+static void OptionMenu_RedrawAllTexts(u8 taskId);
+static u8 AnimeOption_GetLang(void);
 static u8 ButtonMode_ProcessInput(u8 selection);
 static void ButtonMode_DrawChoices(u8 selection);
 static void DrawHeaderText(void);
@@ -72,17 +84,141 @@ static void DrawBgWindowFrames(void);
 
 EWRAM_DATA static bool8 sArrowPressed = FALSE;
 
-static const u8 gText_Option[]             = _("OPTION");
-static const u8 gText_TextSpeedSlow[]      = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}SLOW");
-static const u8 gText_TextSpeedMid[]       = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}MID");
-static const u8 gText_TextSpeedFast[]      = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}FAST");
-static const u8 gText_BattleSceneOn[]      = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}ON");
-static const u8 gText_BattleSceneOff[]     = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}OFF");
-static const u8 gText_BattleStyleShift[]   = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}SHIFT");
-static const u8 gText_BattleStyleSet[]     = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}SET");
+static const u8 sText_AnimeOptionHeader_ES[] = _("OPCIONES");
+static const u8 sText_AnimeOptionHeader_EN[] = _("OPTION");
+static const u8 sText_AnimeOptionHeader_PT[] = _("OPCOES");
+static const u8 sText_AnimeOptionHeader_IT[] = _("OPZIONI");
+static const u8 *const sAnimeOptionHeader[] = {
+    sText_AnimeOptionHeader_ES,
+    sText_AnimeOptionHeader_EN,
+    sText_AnimeOptionHeader_PT,
+    sText_AnimeOptionHeader_IT,
+};
+// Pokemon Anime Edition: option labels in ES / EN / PT / IT.
+// Portuguese avoids tilde vowels (uses ao/AO); every line stays short.
+static const u8 sText_AnimeTextSpeed_ES[] = _("VELOCIDAD");
+static const u8 sText_AnimeTextSpeed_EN[] = _("TEXT SPEED");
+static const u8 sText_AnimeTextSpeed_PT[] = _("VELOCIDADE");
+static const u8 sText_AnimeTextSpeed_IT[] = _("VELOCITA");
+static const u8 sText_AnimeBattleScene_ES[] = _("ESCENA");
+static const u8 sText_AnimeBattleScene_EN[] = _("BATTLE SCENE");
+static const u8 sText_AnimeBattleScene_PT[] = _("CENA");
+static const u8 sText_AnimeBattleScene_IT[] = _("SCENA");
+static const u8 sText_AnimeBattleStyle_ES[] = _("ESTILO");
+static const u8 sText_AnimeBattleStyle_EN[] = _("BATTLE STYLE");
+static const u8 sText_AnimeBattleStyle_PT[] = _("ESTILO");
+static const u8 sText_AnimeBattleStyle_IT[] = _("STILE");
+static const u8 sText_AnimeSound_ES[] = _("SONIDO");
+static const u8 sText_AnimeSound_EN[] = _("SOUND");
+static const u8 sText_AnimeSound_PT[] = _("SOM");
+static const u8 sText_AnimeSound_IT[] = _("SUONO");
+static const u8 sText_AnimeButtonMode_ES[] = _("BOTONES");
+static const u8 sText_AnimeButtonMode_EN[] = _("BUTTON MODE");
+static const u8 sText_AnimeButtonMode_PT[] = _("BOTOES");
+static const u8 sText_AnimeButtonMode_IT[] = _("PULSANTI");
+static const u8 sText_AnimeFrame_ES[] = _("MARCO");
+static const u8 sText_AnimeFrame_EN[] = _("FRAME");
+static const u8 sText_AnimeFrame_PT[] = _("MOLDURA");
+static const u8 sText_AnimeFrame_IT[] = _("CORNICE");
+static const u8 sText_AnimeLanguage_ES[] = _("IDIOMA");
+static const u8 sText_AnimeLanguage_EN[] = _("LANGUAGE");
+static const u8 sText_AnimeLanguage_PT[] = _("IDIOMA");
+static const u8 sText_AnimeLanguage_IT[] = _("LINGUA");
+static const u8 sText_AnimeCancel_ES[] = _("SALIR");
+static const u8 sText_AnimeCancel_EN[] = _("CANCEL");
+static const u8 sText_AnimeCancel_PT[] = _("SAIR");
+static const u8 sText_AnimeCancel_IT[] = _("ESCI");
+static const u8 *const sAnimeOptionLabels[][MENUITEM_COUNT] = {
+    {
+        sText_AnimeTextSpeed_ES, sText_AnimeBattleScene_ES, sText_AnimeBattleStyle_ES,
+        sText_AnimeSound_ES, sText_AnimeButtonMode_ES, sText_AnimeFrame_ES,
+        sText_AnimeLanguage_ES, sText_AnimeCancel_ES,
+    },
+    {
+        sText_AnimeTextSpeed_EN, sText_AnimeBattleScene_EN, sText_AnimeBattleStyle_EN,
+        sText_AnimeSound_EN, sText_AnimeButtonMode_EN, sText_AnimeFrame_EN,
+        sText_AnimeLanguage_EN, sText_AnimeCancel_EN,
+    },
+    {
+        sText_AnimeTextSpeed_PT, sText_AnimeBattleScene_PT, sText_AnimeBattleStyle_PT,
+        sText_AnimeSound_PT, sText_AnimeButtonMode_PT, sText_AnimeFrame_PT,
+        sText_AnimeLanguage_PT, sText_AnimeCancel_PT,
+    },
+    {
+        sText_AnimeTextSpeed_IT, sText_AnimeBattleScene_IT, sText_AnimeBattleStyle_IT,
+        sText_AnimeSound_IT, sText_AnimeButtonMode_IT, sText_AnimeFrame_IT,
+        sText_AnimeLanguage_IT, sText_AnimeCancel_IT,
+    },
+};
+static const u8 sText_AnimeSlow_ES[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}LENTO");
+static const u8 sText_AnimeSlow_EN[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}SLOW");
+static const u8 sText_AnimeSlow_PT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}LENTO");
+static const u8 sText_AnimeSlow_IT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}LENTO");
+static const u8 sText_AnimeMid_ES[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}MEDIO");
+static const u8 sText_AnimeMid_EN[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}MID");
+static const u8 sText_AnimeMid_PT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}MEDIO");
+static const u8 sText_AnimeMid_IT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}MEDIO");
+static const u8 sText_AnimeFast_ES[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}RAPIDO");
+static const u8 sText_AnimeFast_EN[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}FAST");
+static const u8 sText_AnimeFast_PT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}RAPIDO");
+static const u8 sText_AnimeFast_IT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}VELOCE");
+static const u8 *const sAnimeTextSpeedChoices[][3] = {
+    {sText_AnimeSlow_ES, sText_AnimeMid_ES, sText_AnimeFast_ES},
+    {sText_AnimeSlow_EN, sText_AnimeMid_EN, sText_AnimeFast_EN},
+    {sText_AnimeSlow_PT, sText_AnimeMid_PT, sText_AnimeFast_PT},
+    {sText_AnimeSlow_IT, sText_AnimeMid_IT, sText_AnimeFast_IT},
+};
+static const u8 sText_AnimeOn_ES[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}SI");
+static const u8 sText_AnimeOn_EN[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}ON");
+static const u8 sText_AnimeOn_PT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}SIM");
+static const u8 sText_AnimeOn_IT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}SI");
+static const u8 sText_AnimeOff_ES[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}NO");
+static const u8 sText_AnimeOff_EN[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}OFF");
+static const u8 sText_AnimeOff_PT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}NAO");
+static const u8 sText_AnimeOff_IT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}NO");
+static const u8 *const sAnimeOnOffChoices[][2] = {
+    {sText_AnimeOn_ES, sText_AnimeOff_ES},
+    {sText_AnimeOn_EN, sText_AnimeOff_EN},
+    {sText_AnimeOn_PT, sText_AnimeOff_PT},
+    {sText_AnimeOn_IT, sText_AnimeOff_IT},
+};
+static const u8 sText_AnimeShift_ES[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}CAMBIO");
+static const u8 sText_AnimeShift_EN[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}SHIFT");
+static const u8 sText_AnimeShift_PT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}TURNO");
+static const u8 sText_AnimeShift_IT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}CAMBIO");
+static const u8 sText_AnimeSet_ES[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}FIJO");
+static const u8 sText_AnimeSet_EN[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}SET");
+static const u8 sText_AnimeSet_PT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}FIXO");
+static const u8 sText_AnimeSet_IT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}FISSO");
+static const u8 *const sAnimeShiftSetChoices[][2] = {
+    {sText_AnimeShift_ES, sText_AnimeSet_ES},
+    {sText_AnimeShift_EN, sText_AnimeSet_EN},
+    {sText_AnimeShift_PT, sText_AnimeSet_PT},
+    {sText_AnimeShift_IT, sText_AnimeSet_IT},
+};
+static const u8 sText_AnimeFrameWord_ES[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}TIPO");
+static const u8 sText_AnimeFrameWord_EN[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}TYPE");
+static const u8 sText_AnimeFrameWord_PT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}TIPO");
+static const u8 sText_AnimeFrameWord_IT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}TIPO");
+static const u8 *const sAnimeFrameWord[] = {
+    sText_AnimeFrameWord_ES,
+    sText_AnimeFrameWord_EN,
+    sText_AnimeFrameWord_PT,
+    sText_AnimeFrameWord_IT,
+};
+static const u8 sText_AnimeLangName_ES[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}ESPAÑOL");
+static const u8 sText_AnimeLangName_EN[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}ENGLISH");
+static const u8 sText_AnimeLangName_PT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}PORTUGUES");
+static const u8 sText_AnimeLangName_IT[] = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}ITALIANO");
+static const u8 *const sAnimeLangNames[] = {
+    sText_AnimeLangName_ES,
+    sText_AnimeLangName_EN,
+    sText_AnimeLangName_PT,
+    sText_AnimeLangName_IT,
+};
+
 static const u8 gText_SoundMono[]          = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}MONO");
 static const u8 gText_SoundStereo[]        = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}STEREO");
-static const u8 gText_FrameType[]          = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}TYPE");
 static const u8 gText_FrameTypeNumber[]    = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}");
 static const u8 gText_ButtonTypeNormal[]   = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}NORMAL");
 static const u8 gText_ButtonTypeLR[]       = _("{COLOR GREEN}{SHADOW LIGHT_GREEN}LR");
@@ -92,16 +228,14 @@ static const u16 sOptionMenuText_Pal[] = INCGFX_U16("graphics/interface/option_m
 // note: this is only used in the Japanese release
 static const u8 sEqualSignGfx[] = INCGFX_U8("graphics/interface/option_menu_equals_sign.png", ".4bpp");
 
-static const u8 *const sOptionMenuItemsNames[MENUITEM_COUNT] =
+// Pokemon Anime Edition: display language for this menu. It mirrors
+// gSelectedBootLanguage, which is synced with the save on Continue and
+// written back to the save (flags) when leaving this menu.
+static u8 AnimeOption_GetLang(void)
 {
-    [MENUITEM_TEXTSPEED]   = COMPOUND_STRING("TEXT SPEED"),
-    [MENUITEM_BATTLESCENE] = COMPOUND_STRING("BATTLE SCENE"),
-    [MENUITEM_BATTLESTYLE] = COMPOUND_STRING("BATTLE STYLE"),
-    [MENUITEM_SOUND]       = COMPOUND_STRING("SOUND"),
-    [MENUITEM_BUTTONMODE]  = COMPOUND_STRING("BUTTON MODE"),
-    [MENUITEM_FRAMETYPE]   = COMPOUND_STRING("FRAME"),
-    [MENUITEM_CANCEL]      = COMPOUND_STRING("CANCEL"),
-};
+    u8 lang = gSelectedBootLanguage & 3;
+    return (lang < 4) ? lang : 0;
+}
 
 static const struct WindowTemplate sOptionMenuWinTemplates[] =
 {
@@ -250,6 +384,7 @@ void CB2_InitOptionMenu(void)
         gTasks[taskId].tSound = gSaveBlock2Ptr->optionsSound;
         gTasks[taskId].tButtonMode = gSaveBlock2Ptr->optionsButtonMode;
         gTasks[taskId].tWindowFrameType = gSaveBlock2Ptr->optionsWindowFrameType;
+        gTasks[taskId].tLanguage = gSelectedBootLanguage & 3;
 
         TextSpeed_DrawChoices(gTasks[taskId].tTextSpeed);
         BattleScene_DrawChoices(gTasks[taskId].tBattleSceneOff);
@@ -257,6 +392,7 @@ void CB2_InitOptionMenu(void)
         Sound_DrawChoices(gTasks[taskId].tSound);
         ButtonMode_DrawChoices(gTasks[taskId].tButtonMode);
         FrameType_DrawChoices(gTasks[taskId].tWindowFrameType);
+        Language_DrawChoices(gTasks[taskId].tLanguage);
         HighlightOptionMenuItem(gTasks[taskId].tMenuSelection);
 
         CopyWindowToVram(WIN_OPTIONS, COPYWIN_FULL);
@@ -352,6 +488,9 @@ static void Task_OptionMenuProcessInput(u8 taskId)
             if (previousOption != gTasks[taskId].tWindowFrameType)
                 FrameType_DrawChoices(gTasks[taskId].tWindowFrameType);
             break;
+        case MENUITEM_LANGUAGE:
+            gTasks[taskId].tLanguage = Language_ProcessInput(taskId, gTasks[taskId].tLanguage);
+            break;
         default:
             return;
         }
@@ -372,6 +511,11 @@ static void Task_OptionMenuSave(u8 taskId)
     gSaveBlock2Ptr->optionsSound = gTasks[taskId].tSound;
     gSaveBlock2Ptr->optionsButtonMode = gTasks[taskId].tButtonMode;
     gSaveBlock2Ptr->optionsWindowFrameType = gTasks[taskId].tWindowFrameType;
+    // Pokemon Anime Edition: store the language chosen here, both in the
+    // boot variable (used by every menu from now on) and in the save flags
+    // (used in-game, e.g. PC messages). Harmless when no save is loaded.
+    gSelectedBootLanguage = gTasks[taskId].tLanguage & 3;
+    SetAnimeLanguage(gSelectedBootLanguage);
 
     BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
     gTasks[taskId].func = Task_OptionMenuFadeOut;
@@ -390,7 +534,7 @@ static void Task_OptionMenuFadeOut(u8 taskId)
 static void HighlightOptionMenuItem(u8 index)
 {
     SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(16, DISPLAY_WIDTH - 16));
-    SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(index * 16 + 40, index * 16 + 56));
+    SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(index * OPTION_MENU_ROW_H + 40, index * OPTION_MENU_ROW_H + 40 + OPTION_MENU_ROW_H));
 }
 
 static void DrawOptionMenuChoice(const u8 *text, u8 x, u8 y, u8 style)
@@ -444,17 +588,20 @@ static void TextSpeed_DrawChoices(u8 selection)
     styles[2] = 0;
     styles[selection] = 1;
 
-    DrawOptionMenuChoice(gText_TextSpeedSlow, 104, YPOS_TEXTSPEED, styles[0]);
+    {
+        u8 lang = AnimeOption_GetLang();
+        DrawOptionMenuChoice(sAnimeTextSpeedChoices[lang][0], 104, YPOS_TEXTSPEED, styles[0]);
 
-    widthSlow = GetStringWidth(FONT_NORMAL, gText_TextSpeedSlow, 0);
-    widthMid = GetStringWidth(FONT_NORMAL, gText_TextSpeedMid, 0);
-    widthFast = GetStringWidth(FONT_NORMAL, gText_TextSpeedFast, 0);
+        widthSlow = GetStringWidth(FONT_NORMAL, sAnimeTextSpeedChoices[lang][0], 0);
+        widthMid = GetStringWidth(FONT_NORMAL, sAnimeTextSpeedChoices[lang][1], 0);
+        widthFast = GetStringWidth(FONT_NORMAL, sAnimeTextSpeedChoices[lang][2], 0);
 
-    widthMid -= 94;
-    xMid = (widthSlow - widthMid - widthFast) / 2 + 104;
-    DrawOptionMenuChoice(gText_TextSpeedMid, xMid, YPOS_TEXTSPEED, styles[1]);
+        widthMid -= 94;
+        xMid = (widthSlow - widthMid - widthFast) / 2 + 104;
+        DrawOptionMenuChoice(sAnimeTextSpeedChoices[lang][1], xMid, YPOS_TEXTSPEED, styles[1]);
 
-    DrawOptionMenuChoice(gText_TextSpeedFast, GetStringRightAlignXOffset(FONT_NORMAL, gText_TextSpeedFast, 198), YPOS_TEXTSPEED, styles[2]);
+        DrawOptionMenuChoice(sAnimeTextSpeedChoices[lang][2], GetStringRightAlignXOffset(FONT_NORMAL, sAnimeTextSpeedChoices[lang][2], 198), YPOS_TEXTSPEED, styles[2]);
+    }
 }
 
 static u8 BattleScene_ProcessInput(u8 selection)
@@ -476,8 +623,11 @@ static void BattleScene_DrawChoices(u8 selection)
     styles[1] = 0;
     styles[selection] = 1;
 
-    DrawOptionMenuChoice(gText_BattleSceneOn, 104, YPOS_BATTLESCENE, styles[0]);
-    DrawOptionMenuChoice(gText_BattleSceneOff, GetStringRightAlignXOffset(FONT_NORMAL, gText_BattleSceneOff, 198), YPOS_BATTLESCENE, styles[1]);
+    {
+        u8 lang = AnimeOption_GetLang();
+        DrawOptionMenuChoice(sAnimeOnOffChoices[lang][0], 104, YPOS_BATTLESCENE, styles[0]);
+        DrawOptionMenuChoice(sAnimeOnOffChoices[lang][1], GetStringRightAlignXOffset(FONT_NORMAL, sAnimeOnOffChoices[lang][1], 198), YPOS_BATTLESCENE, styles[1]);
+    }
 }
 
 static u8 BattleStyle_ProcessInput(u8 selection)
@@ -499,8 +649,11 @@ static void BattleStyle_DrawChoices(u8 selection)
     styles[1] = 0;
     styles[selection] = 1;
 
-    DrawOptionMenuChoice(gText_BattleStyleShift, 104, YPOS_BATTLESTYLE, styles[0]);
-    DrawOptionMenuChoice(gText_BattleStyleSet, GetStringRightAlignXOffset(FONT_NORMAL, gText_BattleStyleSet, 198), YPOS_BATTLESTYLE, styles[1]);
+    {
+        u8 lang = AnimeOption_GetLang();
+        DrawOptionMenuChoice(sAnimeShiftSetChoices[lang][0], 104, YPOS_BATTLESTYLE, styles[0]);
+        DrawOptionMenuChoice(sAnimeShiftSetChoices[lang][1], GetStringRightAlignXOffset(FONT_NORMAL, sAnimeShiftSetChoices[lang][1], 198), YPOS_BATTLESTYLE, styles[1]);
+    }
 }
 
 static u8 Sound_ProcessInput(u8 selection)
@@ -581,8 +734,52 @@ static void FrameType_DrawChoices(u8 selection)
 
     text[i] = EOS;
 
-    DrawOptionMenuChoice(gText_FrameType, 104, YPOS_FRAMETYPE, 0);
+    DrawOptionMenuChoice(sAnimeFrameWord[AnimeOption_GetLang()], 104, YPOS_FRAMETYPE, 0);
     DrawOptionMenuChoice(text, 128, YPOS_FRAMETYPE, 1);
+}
+
+static u8 Language_ProcessInput(u8 taskId, u8 selection)
+{
+    if (JOY_NEW(DPAD_RIGHT))
+    {
+        selection = (selection + 1) & 3;
+        sArrowPressed = TRUE;
+    }
+    if (JOY_NEW(DPAD_LEFT))
+    {
+        selection = (selection + 3) & 3;
+        sArrowPressed = TRUE;
+    }
+    if (sArrowPressed)
+    {
+        // Pokemon Anime Edition: apply the new language at once and redraw
+        // the whole menu in it.
+        gSelectedBootLanguage = selection & 3;
+        gTasks[taskId].tLanguage = gSelectedBootLanguage;
+        OptionMenu_RedrawAllTexts(taskId);
+        sArrowPressed = FALSE;
+        CopyWindowToVram(WIN_OPTIONS, COPYWIN_GFX);
+        CopyWindowToVram(WIN_HEADER, COPYWIN_GFX);
+    }
+    return selection;
+}
+
+static void Language_DrawChoices(u8 selection)
+{
+    DrawOptionMenuChoice(sAnimeLangNames[selection & 3], GetStringRightAlignXOffset(FONT_NORMAL, sAnimeLangNames[selection & 3], 198), YPOS_LANGUAGE, 1);
+}
+
+static void OptionMenu_RedrawAllTexts(u8 taskId)
+{
+    DrawHeaderText();
+    DrawOptionMenuTexts();
+    TextSpeed_DrawChoices(gTasks[taskId].tTextSpeed);
+    BattleScene_DrawChoices(gTasks[taskId].tBattleSceneOff);
+    BattleStyle_DrawChoices(gTasks[taskId].tBattleStyle);
+    Sound_DrawChoices(gTasks[taskId].tSound);
+    ButtonMode_DrawChoices(gTasks[taskId].tButtonMode);
+    FrameType_DrawChoices(gTasks[taskId].tWindowFrameType);
+    Language_DrawChoices(gTasks[taskId].tLanguage);
 }
 
 static u8 ButtonMode_ProcessInput(u8 selection)
@@ -634,7 +831,7 @@ static void ButtonMode_DrawChoices(u8 selection)
 static void DrawHeaderText(void)
 {
     FillWindowPixelBuffer(WIN_HEADER, PIXEL_FILL(1));
-    AddTextPrinterParameterized(WIN_HEADER, FONT_NORMAL, gText_Option, 8, 1, TEXT_SKIP_DRAW, NULL);
+    AddTextPrinterParameterized(WIN_HEADER, FONT_NORMAL, sAnimeOptionHeader[AnimeOption_GetLang()], 8, 1, TEXT_SKIP_DRAW, NULL);
     CopyWindowToVram(WIN_HEADER, COPYWIN_FULL);
 }
 
@@ -644,7 +841,7 @@ static void DrawOptionMenuTexts(void)
 
     FillWindowPixelBuffer(WIN_OPTIONS, PIXEL_FILL(1));
     for (i = 0; i < MENUITEM_COUNT; i++)
-        AddTextPrinterParameterized(WIN_OPTIONS, FONT_NORMAL, sOptionMenuItemsNames[i], 8, (i * 16) + 1, TEXT_SKIP_DRAW, NULL);
+        AddTextPrinterParameterized(WIN_OPTIONS, FONT_NORMAL, sAnimeOptionLabels[AnimeOption_GetLang()][i], 8, (i * OPTION_MENU_ROW_H) + 1, TEXT_SKIP_DRAW, NULL);
     CopyWindowToVram(WIN_OPTIONS, COPYWIN_FULL);
 }
 
