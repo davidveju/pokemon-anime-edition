@@ -13,9 +13,10 @@
    - En `NewGameInitData()` (`src/new_game.c`), ejecutar tanto `EventScript_ResetAllMapFlags` como `EventScript_ResetAllMapFlagsFrlg`.
    - En `include/constants/flags.h`, reasignar los `FLAG_HIDDEN_ITEM_*` de FRLG stubbed a `0` hacia flags libres reales `>= FLAG_HIDDEN_ITEMS_START` sin colisionar con trainer flags.
 2. **Arranque en Nueva Partida (`src/main_menu.c`, `src/new_game.c`):**
-   - En `src/main_menu.c`, hacer primero el fundido a negro (`BeginNormalPaletteFade`), esperar `!gPaletteFade.active` en una tarea y solo entonces llamar a `SetMainCallback2(CB2_NewGame)` (saltando la intro de Abedul/Birch).
-   - En `NewGameInitData()` y `WarpToTruck()`, inicializar `playerName = "ASH"`, `playerGender = MALE` y `rivalName = "GARY"`, y hacer warp incondicional a `MAP_PALLET_TOWN` (`PalletTown_Frlg`) en coordenadas caminables verificadas en su `map.json`.
-   - En `PalletTown_Frlg/scripts.inc`, usar `delay 16` (nunca `waitstate` sin tarea en C) en `MAP_SCRIPT_ON_FRAME_TABLE` antes del `dynmultichoice` inicial para que la pantalla termine de aclararse.
+   - En `src/main_menu.c`, el menú ya está fundido a negro cuando se pulsa A (`Task_HandleMainMenuAPressed` espera `!gPaletteFade.active`); NUEVA PARTIDA destruye la tarea, libera ventanas, fija `MALE` + `"ASH"` y llama a `SetMainCallback2(CB2_NewGame)`.
+   - **No** usar `StartNewGameSceneAnime()` / el discurso de Oak en el arranque (ver “Estado y Reglas de Arranque”).
+   - `WarpToTruck()` (`src/new_game.c`) es el **único** warp de nueva partida: dormitorio 2F `(5,6)`.
+   - `NewGameInitData()` fija género/nombre/idioma, oculta las Poké Balls y el rival del laboratorio (`0x49B–0x49E`), oculta a Oak en la calle (`0x49F`) y pone `VAR_MAP_SCENE_PALLET_TOWN_OAK = 1`.
 3. **Variables y Entrenadores:**
    - **No añadir variables** por encima de `VARS_END` (`0x40FF`) en `include/constants/vars.h`; gestionar la historia con flags libres en `include/constants/flags.h`.
    - Fijar `MAX_TRAINERS_COUNT_EMERALD` en `950` (`include/constants/opponents.h`) desde la Fase 0 para no desplazar `SYSTEM_FLAGS` ni romper partidas guardadas en fases posteriores.
@@ -51,3 +52,15 @@
 - Antes de tocar un mapa de Kanto, ejecutar `python3 tools/anime-debug/audit_flags.py` (duplicados, flags usadas a `0` y `FLAG_UNUSED` libres).
 - Al reasignar: usar una `FLAG_UNUSED_0xNNN` libre, **eliminar su definición `FLAG_UNUSED`** (para no dejar valores duplicados) y activarla en `NewGameInitData()` o en el `OnTransition` del mapa.
 - Verificar con `boottest.py` y volver a pasar la auditoría.
+
+## Ramas y Verificación
+- **Ramas:** `master` = espejo de `origin/master` (base Esmeralda del fork; solo para `git pull`); `pokemon-anime-edition` = rama del proyecto (todo el desarrollo). No commitear en `master`.
+- **Documentación:** `docs/phase0-progress.md` (estado, decisiones y checklist) y `docs/anime-debug.md` (depuración en memoria).
+- **Antes de commitear:**
+  1. `make -j3` → 0 errores/warnings.
+  2. `make -j3 pokeemerald-test.elf` → el arnés de tests compila (valida `test/*`).
+  3. ROM usada < 32 MiB (lo imprime el enlazador).
+  4. `python3 tools/anime-debug/boottest.py` → `FIELD OK` (arranque sano).
+  5. `python3 tools/anime-debug/audit_flags.py` → sin duplicados nuevos.
+  6. `docs/phase0-progress.md` actualizado si cambia el arranque, Kanto o el multiidioma.
+- **Emulador de pruebas:** `boottest.py` cierra mGBA al terminar (el stub GDB pausa la emulación al desconectar y la ventana se queda en negro). Usar `--keep` solo para depurar.

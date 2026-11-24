@@ -23,3 +23,10 @@ Aplica estas reglas siempre que edites o crees archivos en `data/maps/` o `data/
    - Antes de colocar un NPC o un `coord_event`, lee el `map.json` del mapa para verificar coordenadas caminables y evitar bloquear puertas o pasillos estrechos.
    - Todo `coord_event` debe comprobar un flag al inicio (`goto_if_set FLAG_..., Common_EventScript_NopReturn`) y activarlo antes de terminar para evitar bucles infinitos.
    - Equilibra siempre `lock`/`lockall` con `release`/`releaseall` en todas las ramas del script.
+
+5. **Menús del motor (no hardcodear inglés):**
+   - Los cuadros `MSGBOX_YESNO` usan `GetAnimeYesNoText()` (`SÍ/NO`, `YES/NO`, `SIM/NAO`, `SÌ/NO`).
+   - La barra del teclado de nombres usa `GetAnimeMoveOkBackText()`.
+   - Los textos de menús localizados viven en `src/event_data.c`; si añades un
+     menú nuevo, exponlo ahí y consúmelo desde `src/menu.c` o la pantalla
+     correspondiente, en vez de escribir literales en un solo idioma.

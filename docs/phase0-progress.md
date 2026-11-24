@@ -1,7 +1,8 @@
 # Pokémon Anime Edition — Progreso Fase 0 (arranque, multiidioma e intro)
 
 > Última actualización: 2026-11-24
-> Commit de referencia: `9fe3c32b88` — `feat(phase0): fix FRLG overworld assets in Emerald build, anime Pallet Town intro, 4-lang UI and GDB debug tool`
+> Rama de desarrollo: `pokemon-anime-edition` (publicada en `origin`).
+> Base: `master` = `origin/master` (`10e22cf91e`, Esmeralda prístina).
 > ROM de referencia: `pokemon-anime-edition.gba` — **28.448.140 B usados (84,78 %)**, por debajo del límite de 32 MiB.
 
 Este documento resume **qué está hecho, cómo está hecho y qué no debe romperse**.
@@ -334,3 +335,23 @@ y Oak en la calle).
   2. Al actualizar el fork: `git switch master && git pull`, luego
      `git switch pokemon-anime-edition && git merge master` (o rebase si no está publicada).
   3. No commitear directamente en `master` para que el pull del fork sea limpio.
+
+---
+
+## 12. Comandos de verificación rápida
+
+```bash
+# compilación + ROM
+make -j3
+make -j3 pokeemerald-test.elf          # valida el arnés de test/
+cp pokeemerald.gba pokemon-anime-edition.gba
+
+# arranque sano (cierra mGBA al terminar)
+python3 tools/anime-debug/boottest.py
+
+# integridad de flags
+python3 tools/anime-debug/audit_flags.py
+
+# depuración puntual
+python3 tools/anime-debug/watch.py ScrCmd_createmon 60 x
+```
