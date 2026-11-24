@@ -22,9 +22,14 @@ El stub escucha en `127.0.0.1:2345`.
 ## Herramientas
 
 - `tools/anime-debug/boottest.py [segundos] [rom]`
+  - Cierra el emulador al terminar (si no se pasa `--keep`) para que no quede
+    una ventana pausada en negro por el stub.
   - Oráculo rápido: arranca el ROM, pulsa A y comprueba si se alcanzó
     `CB2_Overworld`. Imprime `FIELD OK map=... pos=... party=...` o
     `NO FIELD (crash/timeout)`. Ideal tras cada cambio de arranque/mapa.
+- `tools/anime-debug/audit_flags.py`
+  - Lista duplicados de flags, flags usadas por mapas que siguen a `0`
+    (objetos siempre visibles) y `FLAG_UNUSED_*` libres para reasignar.
 - `tools/anime-debug/rsp.py`
   - `state()`: para el CPU en el siguiente frame (`RunTasks`) y devuelve
     `cb1/cb2`, `gMain.state`, punteros de SaveBlock, `pos`, `map`, `party`.

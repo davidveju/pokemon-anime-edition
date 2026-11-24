@@ -290,3 +290,29 @@ Antes de tocar arranque, mapas de Kanto o multiidioma:
   arranque: `0x49B–0x49F`).
 - `src/main_menu.c` ya no referencia `StartNewGameSceneAnime`; `src/oak_speech.c`
   queda compilado pero fuera del flujo (no borrar sin revisar `include/oak_speech.h`).
+
+---
+
+## 10. Gestión de flags `unused` (obligatorio al tocar Kanto)
+
+Herramienta:
+```bash
+python3 tools/anime-debug/audit_flags.py
+```
+Informa de:
+1. **Duplicados** (mismo valor con varios nombres).
+2. **Flags usadas por mapas pero a `0`** (objetos siempre visibles). Hoy: **292**.
+3. **`FLAG_UNUSED_*` libres** (<0x500, sin referencias). Hoy: **222**.
+
+Procedimiento al añadir/tocar un mapa con `object_event` que use `FLAG_HIDE_*`:
+1. Ejecutar la auditoría y comprobar si esa flag vale `0`.
+2. Si vale `0`, reasignarla en `include/constants/flags.h` a una `FLAG_UNUSED_0xNNN`
+   libre (no referenciada por nadie) y **borrar** la definición `FLAG_UNUSED` para
+   evitar nombres duplicados.
+3. Activarla donde corresponda (normalmente `NewGameInitData()` si debe estar
+   oculta desde el inicio, o el `OnTransition` del mapa si es estado de escena).
+4. Verificar: `audit_flags.py` sin duplicados para el valor y
+   `python3 tools/anime-debug/boottest.py` con el mapa cargando.
+
+Hecho hasta ahora: `0x49B–0x49F` (Poké Balls de starter, rival del laboratorio
+y Oak en la calle).

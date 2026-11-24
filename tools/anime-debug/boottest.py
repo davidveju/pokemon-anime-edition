@@ -36,8 +36,10 @@ def wid():
 
 
 def main():
-    timeout = float(sys.argv[1]) if len(sys.argv) > 1 else 45.0
-    rom = sys.argv[2] if len(sys.argv) > 2 else DEFAULT_ROM
+    args = [a for a in sys.argv[1:] if a != "--keep"]
+    keep = "--keep" in sys.argv
+    timeout = float(args[0]) if len(args) > 0 else 45.0
+    rom = args[1] if len(args) > 1 else DEFAULT_ROM
 
     subprocess.run(["pkill", "-9", "-x", "mgba-qt"], capture_output=True)
     time.sleep(2)
@@ -94,6 +96,10 @@ def main():
         except Exception:
             pass
         r.close()
+        # El stub deja la emulación pausada al desconectar: si el proceso se
+        # queda abierto, la ventana se ve en negro. Cerramos salvo --keep.
+        if not keep:
+            subprocess.run(["pkill", "-9", "-x", "mgba-qt"], capture_output=True)
 
 
 if __name__ == "__main__":

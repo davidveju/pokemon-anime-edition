@@ -45,3 +45,9 @@
 - **Flags 0x49B–0x49F:** `FLAG_HIDE_BULBASAUR_BALL`, `..._SQUIRTLE_BALL`, `..._CHARMANDER_BALL`, `FLAG_HIDE_RIVAL_IN_LAB` y `FLAG_HIDE_OAK_IN_PALLET_TOWN` son flags reales y se activan en `NewGameInitData()` (antes estaban stubbeadas a `0` y los objetos aparecían siempre).
 - **Escena del laboratorio:** `VAR_MAP_SCENE_PALLET_TOWN_PROFESSOR_OAKS_LAB` pasa a `9` al entregar a Pikachu (nunca a `1`, que dispara la escena vanilla de los 3 starters) y `VAR_MAP_SCENE_PALLET_TOWN_OAK` se fija a `1` para desactivar el trigger de Oak del pueblo.
 - **Multiidioma de menús:** `GetAnimeYesNoText()` (`SÍ/NO`, `YES/NO`, `SIM/NAO`, `SÌ/NO`) y `GetAnimeMoveOkBackText()` viven en `src/event_data.c`; `src/menu.c` y `src/naming_screen.c` los consumen.
+
+## Flags `unused` (Kanto/FRLG)
+- **Ninguna flag usada por un `object_event` puede quedarse a `0`**: con `flagId = 0` el objeto está siempre visible.
+- Antes de tocar un mapa de Kanto, ejecutar `python3 tools/anime-debug/audit_flags.py` (duplicados, flags usadas a `0` y `FLAG_UNUSED` libres).
+- Al reasignar: usar una `FLAG_UNUSED_0xNNN` libre, **eliminar su definición `FLAG_UNUSED`** (para no dejar valores duplicados) y activarla en `NewGameInitData()` o en el `OnTransition` del mapa.
+- Verificar con `boottest.py` y volver a pasar la auditoría.
