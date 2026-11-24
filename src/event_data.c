@@ -279,3 +279,46 @@ void SetAnimeLanguage(u8 lang)
     else
         FlagClear(FLAG_ANIME_LANG_BIT1);
 }
+
+// Pokemon Anime Edition: localized standard YES/NO menu entries.
+// Portuguese avoids tilde vowels (ao/AO).
+static const u8 sAnimeText_YesNo_ES[] = _("SÍ\nNO");
+static const u8 sAnimeText_YesNo_EN[] = _("YES\nNO");
+static const u8 sAnimeText_YesNo_PT[] = _("SIM\nNAO");
+static const u8 sAnimeText_YesNo_IT[] = _("SÌ\nNO");
+
+const u8 *GetAnimeYesNoText(void)
+{
+    switch (GetAnimeLanguage())
+    {
+    case 1:
+        return sAnimeText_YesNo_EN;
+    case 2:
+        return sAnimeText_YesNo_PT;
+    case 3:
+        return sAnimeText_YesNo_IT;
+    default:
+        return sAnimeText_YesNo_ES;
+    }
+}
+
+// Pokemon Anime Edition: localized banner of the naming screen.
+static const u8 sAnimeText_MoveOkBack_ES[] = _("{DPAD_NONE}MOVER  {A_BUTTON}OK  {B_BUTTON}VOLVER");
+static const u8 sAnimeText_MoveOkBack_EN[] = _("{DPAD_NONE}MOVE  {A_BUTTON}OK  {B_BUTTON}BACK");
+static const u8 sAnimeText_MoveOkBack_PT[] = _("{DPAD_NONE}MOVER  {A_BUTTON}OK  {B_BUTTON}VOLTAR");
+static const u8 sAnimeText_MoveOkBack_IT[] = _("{DPAD_NONE}MUOVI  {A_BUTTON}OK  {B_BUTTON}INDIETRO");
+
+const u8 *GetAnimeMoveOkBackText(void)
+{
+    switch (GetAnimeLanguage())
+    {
+    case 1:
+        return sAnimeText_MoveOkBack_EN;
+    case 2:
+        return sAnimeText_MoveOkBack_PT;
+    case 3:
+        return sAnimeText_MoveOkBack_IT;
+    default:
+        return sAnimeText_MoveOkBack_ES;
+    }
+}

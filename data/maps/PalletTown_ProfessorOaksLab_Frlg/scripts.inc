@@ -47,9 +47,36 @@ PalletTown_ProfessorOaksLab_EventScript_ReadyPlayerForStarterScene::
 	end
 
 PalletTown_ProfessorOaksLab_OnFrame::
+	map_script_2 VAR_MAP_SCENE_PALLET_TOWN_PROFESSOR_OAKS_LAB, 0, PalletTown_ProfessorOaksLab_EventScript_AnimePikachuIntro
 	map_script_2 VAR_MAP_SCENE_PALLET_TOWN_PROFESSOR_OAKS_LAB, 1, PalletTown_ProfessorOaksLab_ChooseStarterScene
 	map_script_2 VAR_MAP_SCENE_PALLET_TOWN_PROFESSOR_OAKS_LAB, 7, PalletTown_ProfessorOaksLab_EventScript_EnterForNationalDexScene
 	.2byte 0
+
+@ Pokemon Anime Edition (anime opening): the player arrives late. All the
+@ other trainers already left with Bulbasaur, Charmander and Squirtle, so
+@ only the unruly Pikachu remains. It refuses the POKe BALL but chooses the
+@ player anyway. Triggered by coord events in front of Oak (see map.json).
+@ Sets VAR_MAP_SCENE_PALLET_TOWN_PROFESSOR_OAKS_LAB to 9 (no vanilla starter
+@ scene) and VAR_MAP_SCENE_PALLET_TOWN_OAK to 1 (no town Oak trigger).
+PalletTown_ProfessorOaksLab_EventScript_AnimePikachuIntro::
+	lockall
+	delay 16
+	turnobject LOCALID_PLAYER, DIR_NORTH
+	msgbox_i18n PalletTown_Text_AnimeOakGreeting_ES, PalletTown_Text_AnimeOakGreeting_EN, PalletTown_Text_AnimeOakGreeting_PT, PalletTown_Text_AnimeOakGreeting_IT
+	closemessage
+	givemon SPECIES_PIKACHU, 5
+	playfanfare MUS_LEVEL_UP
+	msgbox_i18n PalletTown_Text_AnimeReceivedPikachu_ES, PalletTown_Text_AnimeReceivedPikachu_EN, PalletTown_Text_AnimeReceivedPikachu_PT, PalletTown_Text_AnimeReceivedPikachu_IT
+	waitfanfare
+	closemessage
+	setflag FLAG_SYS_POKEMON_GET
+	setflag FLAG_ANIME_PIKACHU_RECEIVED
+	setflag FLAG_ANIME_PIKACHU_CANNOT_EVOLVE
+	setflag FLAG_ANIME_PIKACHU_CANNOT_DEPOSIT
+	setvar VAR_MAP_SCENE_PALLET_TOWN_PROFESSOR_OAKS_LAB, 9
+	setvar VAR_MAP_SCENE_PALLET_TOWN_OAK, 1
+	releaseall
+	end
 
 PalletTown_ProfessorOaksLab_EventScript_EnterForNationalDexScene:: @ 8169002 
 	lockall

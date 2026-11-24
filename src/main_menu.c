@@ -970,7 +970,16 @@ static void Task_HandleMainMenuAPressed(u8 taskId)
                 sCurrItemAndOptionMenuCheck = 0;
             else
                 sCurrItemAndOptionMenuCheck |= OPTION_MENU_FLAG;  // entering the options menu
-            StartNewGameSceneAnime();
+            // Pokemon Anime Edition: no Oak speech (it is an FRLG-only scene
+            // and conflicts with the IS_FRLG=0 boot). We are already faded to
+            // black here, so start the new game directly. WarpToTruck() is the
+            // single source of truth for the starting map (bedroom 2F).
+            gSelectedBootGender = MALE;
+            gSelectedBootName[0] = CHAR_A;
+            gSelectedBootName[1] = CHAR_S;
+            gSelectedBootName[2] = CHAR_H;
+            gSelectedBootName[3] = EOS;
+            SetMainCallback2(CB2_NewGame);
             return;
         case ACTION_CONTINUE:
             gPlttBufferUnfaded[0] = RGB_BLACK;

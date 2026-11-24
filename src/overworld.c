@@ -1947,6 +1947,12 @@ void CB2_NewGame(void)
     // for this fade with `delay 16`).
     gFieldCallback = FieldCB_WarpExitFadeFromBlack;
     gFieldCallback2 = NULL;
+    // Pokemon Anime Edition: the Oak intro reaches this callback with
+    // gMain.state left over from its scene setup (e.g. 7 after the naming
+    // screen init). A fresh map load must always start at step 0, otherwise
+    // LoadMapFromWarp / object events / camera are skipped and Pallet Town
+    // loads broken (missing NPCs, stale sprites, eventual reset).
+    gMain.state = 0;
     DoMapLoadLoop(&gMain.state);
     SetFieldVBlankCallback();
     SetMainCallback1(CB1_Overworld);

@@ -2063,7 +2063,7 @@ static void PrintControls(void)
     const u8 color[3] = { TEXT_DYNAMIC_COLOR_6, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY };
 
     FillWindowPixelBuffer(sNamingScreen->windows[WIN_BANNER], PIXEL_FILL(15));
-    AddTextPrinterParameterized3(sNamingScreen->windows[WIN_BANNER], FONT_SMALL, 2, 1, color, 0, sText_MoveOkBack);
+    AddTextPrinterParameterized3(sNamingScreen->windows[WIN_BANNER], FONT_SMALL, 2, 1, color, 0, GetAnimeMoveOkBackText()); // Pokemon Anime Edition: localized banner
     PutWindowTilemap(sNamingScreen->windows[WIN_BANNER]);
     CopyWindowToVram(sNamingScreen->windows[WIN_BANNER], COPYWIN_FULL);
 }
@@ -2147,9 +2147,11 @@ static void UNUSED Debug_NamingScreenNickname(void)
 //--------------------------------------------------
 
 // Initial pages below are pointless, they're overwritten with KBPAGE_LETTERS_UPPER in MainState_FadeIn()
+// Pokemon Anime Edition: the Oak intro pre-fills ASH / HOJA, so the
+// naming screen must show the existing name for editing.
 static const struct NamingScreenTemplate sPlayerNamingScreenTemplate =
 {
-    .copyExistingString = FALSE,
+    .copyExistingString = TRUE,
     .maxChars = PLAYER_NAME_LENGTH,
     .iconFunction = 1,
     .addGenderIcon = FALSE,

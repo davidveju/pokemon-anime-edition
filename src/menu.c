@@ -919,7 +919,7 @@ void CreateYesNoMenuAtPos(const struct WindowTemplate *window, u8 fontId, u8 lef
     sYesNoWindowId = AddWindow(window);
     DrawStdFrameWithCustomTileAndPalette(sYesNoWindowId, TRUE, baseTileNum, paletteNum);
 
-    printer.currentChar = gText_YesNo;
+    printer.currentChar = GetAnimeYesNoText(); // Pokemon Anime Edition: localized YES/NO
     printer.type = WINDOW_TEXT_PRINTER;
     printer.windowId = sYesNoWindowId;
     printer.fontId = fontId;
@@ -1365,7 +1365,7 @@ void CreateYesNoMenu(const struct WindowTemplate *window, u16 baseTileNum, u8 pa
     sYesNoWindowId = AddWindow(window);
     DrawStdFrameWithCustomTileAndPalette(sYesNoWindowId, TRUE, baseTileNum, paletteNum);
 
-    printer.currentChar = gText_YesNo;
+    printer.currentChar = GetAnimeYesNoText(); // Pokemon Anime Edition: localized YES/NO
     printer.type = WINDOW_TEXT_PRINTER;
     printer.windowId = sYesNoWindowId;
     printer.fontId = FONT_NORMAL;

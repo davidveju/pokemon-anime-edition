@@ -5,9 +5,7 @@ PalletTown_PlayersHouse_1F_EventScript_Mom::
 	lock
 	faceplayer
 	goto_if_set FLAG_BEAT_RIVAL_IN_OAKS_LAB, PalletTown_PlayersHouse_1F_EventScript_MomHeal
-	checkplayergender
-	call_if_eq VAR_RESULT, MALE, PalletTown_PlayersHouse_1F_EventScript_MomOakLookingForYouMale
-	call_if_eq VAR_RESULT, FEMALE, PalletTown_PlayersHouse_1F_EventScript_MomOakLookingForYouFemale
+	msgbox_i18n PalletTown_PlayersHouse_1F_Text_MomLate_ES, PalletTown_PlayersHouse_1F_Text_MomLate_EN, PalletTown_PlayersHouse_1F_Text_MomLate_PT, PalletTown_PlayersHouse_1F_Text_MomLate_IT
 	closemessage
 	applymovement LOCALID_PLAYERS_HOUSE_1F_MOM, Common_Movement_FaceOriginalDirection
 	waitmovement 0
@@ -90,3 +88,34 @@ PalletTown_PlayersHouse_1F_Text_MovieOnTVGirlOnBrickRoad::
 
 PalletTown_PlayersHouse_1F_Text_OopsWrongSide::
 	.string "Oops, wrong side…$"
+
+
+@ Pokemon Anime Edition: anime opening. Mom tells the player that the other
+@ trainers already left with their Pokemon and Oak is waiting at the lab.
+PalletTown_PlayersHouse_1F_Text_MomLate_ES::
+	.string "MAMA: ¡{PLAYER}!\p"
+	.string "Todos los chicos ya se han ido\n"
+	.string "a por su primer POKéMON.\p"
+	.string "El PROF. OAK te espera\n"
+	.string "en el laboratorio.$"
+
+PalletTown_PlayersHouse_1F_Text_MomLate_EN::
+	.string "MOM: {PLAYER}!\p"
+	.string "All the boys already left\n"
+	.string "to get their first POKéMON.\p"
+	.string "Prof. Oak is waiting for you\n"
+	.string "at the lab.$"
+
+PalletTown_PlayersHouse_1F_Text_MomLate_PT::
+	.string "MAE: {PLAYER}!\p"
+	.string "Todos os rapazes ja foram\n"
+	.string "buscar o seu POKéMON.\p"
+	.string "O Prof. Oak espera por ti\n"
+	.string "no laboratorio.$"
+
+PalletTown_PlayersHouse_1F_Text_MomLate_IT::
+	.string "MAMMA: {PLAYER}!\p"
+	.string "Tutti i ragazzi sono gia andati\n"
+	.string "a prendere il loro POKéMON.\p"
+	.string "Il Prof. Oak ti aspetta\n"
+	.string "nel laboratorio.$"

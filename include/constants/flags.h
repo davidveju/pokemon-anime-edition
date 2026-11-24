@@ -1663,12 +1663,12 @@
 
 // FRLG flags
 
-#define FLAG_HIDE_BULBASAUR_BALL                           0
-#define FLAG_HIDE_SQUIRTLE_BALL                            0
-#define FLAG_HIDE_CHARMANDER_BALL                          0
+#define FLAG_HIDE_BULBASAUR_BALL                           0x49B // Anime: starter already taken
+#define FLAG_HIDE_SQUIRTLE_BALL                            0x49C // Anime: starter already taken
+#define FLAG_HIDE_CHARMANDER_BALL                          0x49D // Anime: starter already taken
 #define FLAG_HIDE_OAK_IN_HIS_LAB                           0
-#define FLAG_HIDE_OAK_IN_PALLET_TOWN                       0
-#define FLAG_HIDE_RIVAL_IN_LAB                             0
+#define FLAG_HIDE_OAK_IN_PALLET_TOWN                       0x49F // Anime: Oak stays in his lab
+#define FLAG_HIDE_RIVAL_IN_LAB                             0x49E // Anime: rival already left
 #define FLAG_HIDE_PEWTER_CITY_GYM_GUIDE                    0
 #define FLAG_HIDE_DOME_FOSSIL                              0
 #define FLAG_HIDE_HELIX_FOSSIL                             0

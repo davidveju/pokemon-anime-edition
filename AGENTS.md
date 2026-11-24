@@ -31,3 +31,7 @@
 - **Bloqueo de evolución (`src/pokemon.c`):** En `GetEvolutionTargetSpecies()`, impedir que Pikachu evolucione con `ITEM_THUNDER_STONE` mientras `FLAG_ANIME_PIKACHU_CANNOT_EVOLVE` esté activa.
 - **Bloqueo de PC (`src/pokemon_storage_system.c`):** Impedir depositar el Pikachu inicial mientras `FLAG_ANIME_PIKACHU_CANNOT_DEPOSIT` esté activa, mostrando el mensaje en los 4 idiomas mediante `GetAnimeLanguage()`.
 - **Desobediencia (`src/battle_util.c`):** En `GetAttackerObedienceForAction()`, solo para `B_SIDE_PLAYER`, Pikachu desobedece mientras `FLAG_ANIME_PIKACHU_OBEDIENT` no esté activa, y Charmeleon/Charizard desobedecen mientras `FLAG_ANIME_CHARIZARD_OBEDIENT` no esté activa.
+
+## Recursos Gráficos FRLG en Build Emerald (`-DEMERALD`)
+- **Nunca** vuelvas a encerrar tras `#if IS_FRLG` los recursos de overworld FRLG (`object_event_graphics.h`, `object_event_pic_tables.h`, `object_event_graphics_info.h`, `object_event_graphics_info_pointers.h` y las paletas en `src/event_object_movement.c`); dejar huecos `NULL` en la tabla de punteros provoca un reinicio inmediato al spawnear NPCs de Kanto.
+- Usa `tools/anime-debug/` (según `docs/anime-debug.md`) para verificar en memoria coordenadas, flags y equipo tras compilar.

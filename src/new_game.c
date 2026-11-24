@@ -138,11 +138,11 @@ static void ClearFrontierRecord(void)
 
 static void WarpToTruck(void)
 {
-    // Pokemon Anime Edition (Phase 0): skip the moving truck entirely and
-    // start directly in Pallet Town on a walkable tile verified in
-    // data/maps/PalletTown_Frlg/map.json (in front of the player's house,
-    // next to Prof. Oak).
-    SetWarpDestination(MAP_GROUP(MAP_PALLET_TOWN), MAP_NUM(MAP_PALLET_TOWN), WARP_ID_NONE, 10, 9);
+    // Pokemon Anime Edition (Phase 0, anime style): the player wakes up late
+    // in their own bedroom (2F), just like Ash in the first episode.
+    // Tile verified as walkable in
+    // data/layouts/PalletTown_PlayersHouse_2F_Frlg/map.bin.
+    SetWarpDestination(MAP_GROUP(MAP_PALLET_TOWN_PLAYERS_HOUSE_2F), MAP_NUM(MAP_PALLET_TOWN_PLAYERS_HOUSE_2F), WARP_ID_NONE, 5, 6);
     WarpIntoMap();
 }
 
@@ -233,6 +233,20 @@ void NewGameInitData(void)
     // The rival is always GARY: ClearSav1() above wipes the name and the
     // Oak intro skips the rival naming screen.
     StringCopy(gSaveBlock1Ptr->rivalName, sText_AnimeRivalDefaultName);
+    // Pokemon Anime Edition (anime opening): by the time the player arrives,
+    // the other trainers already took Bulbasaur/Squirtle/Charmander and the
+    // rival has left. Hide those leftovers inside Oak's lab and keep Oak out
+    // of the street (he waits in his lab). The town's Oak trigger is disabled
+    // through its map-scene var so the vanilla 3-starter scene never starts.
+    // Anime opening: the other trainers already took Bulbasaur/Squirtle/
+    // Charmander and the rival has left, so hide those leftovers in the lab
+    // and keep Oak inside his lab.
+    FlagSet(FLAG_HIDE_BULBASAUR_BALL);
+    FlagSet(FLAG_HIDE_SQUIRTLE_BALL);
+    FlagSet(FLAG_HIDE_CHARMANDER_BALL);
+    FlagSet(FLAG_HIDE_RIVAL_IN_LAB);
+    FlagSet(FLAG_HIDE_OAK_IN_PALLET_TOWN);
+    VarSet(VAR_MAP_SCENE_PALLET_TOWN_OAK, 1);
     ResetMiniGamesRecords();
     InitUnionRoomChatRegisteredTexts();
     InitLilycoveLady();

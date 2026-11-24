@@ -580,28 +580,12 @@ static u8 TextSpeed_ProcessInput(u8 selection)
 
 static void TextSpeed_DrawChoices(u8 selection)
 {
-    u8 styles[3];
-    s32 widthSlow, widthMid, widthFast, xMid;
-
-    styles[0] = 0;
-    styles[1] = 0;
-    styles[2] = 0;
-    styles[selection] = 1;
-
-    {
-        u8 lang = AnimeOption_GetLang();
-        DrawOptionMenuChoice(sAnimeTextSpeedChoices[lang][0], 104, YPOS_TEXTSPEED, styles[0]);
-
-        widthSlow = GetStringWidth(FONT_NORMAL, sAnimeTextSpeedChoices[lang][0], 0);
-        widthMid = GetStringWidth(FONT_NORMAL, sAnimeTextSpeedChoices[lang][1], 0);
-        widthFast = GetStringWidth(FONT_NORMAL, sAnimeTextSpeedChoices[lang][2], 0);
-
-        widthMid -= 94;
-        xMid = (widthSlow - widthMid - widthFast) / 2 + 104;
-        DrawOptionMenuChoice(sAnimeTextSpeedChoices[lang][1], xMid, YPOS_TEXTSPEED, styles[1]);
-
-        DrawOptionMenuChoice(sAnimeTextSpeedChoices[lang][2], GetStringRightAlignXOffset(FONT_NORMAL, sAnimeTextSpeedChoices[lang][2], 198), YPOS_TEXTSPEED, styles[2]);
-    }
+    // Pokemon Anime Edition: single current value (right aligned), as the
+    // three ES/PT/IT words do not fit side by side in this window.
+    u8 lang = AnimeOption_GetLang();
+    if (selection > 2)
+        selection = 2;
+    DrawOptionMenuChoice(sAnimeTextSpeedChoices[lang][selection], GetStringRightAlignXOffset(FONT_NORMAL, sAnimeTextSpeedChoices[lang][selection], 198), YPOS_TEXTSPEED, 1);
 }
 
 static u8 BattleScene_ProcessInput(u8 selection)
