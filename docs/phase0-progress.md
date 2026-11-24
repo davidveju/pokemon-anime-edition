@@ -316,3 +316,20 @@ Procedimiento al añadir/tocar un mapa con `object_event` que use `FLAG_HIDE_*`:
 
 Hecho hasta ahora: `0x49B–0x49F` (Poké Balls de starter, rival del laboratorio
 y Oak en la calle).
+
+---
+
+## 11. Estrategia de ramas
+
+- **`master`** = espejo de `origin/master` (base del fork, `10e22cf91e`). Solo se
+  usa para traer cambios del fork original:
+  ```bash
+  git switch master && git pull
+  ```
+- **`anime/phase0`** = rama de desarrollo del hack (todo el trabajo de Fase 0).
+  Publicada como `origin/anime/phase0`.
+- Flujo recomendado:
+  1. Trabajar y commitear en `anime/phase0`.
+  2. Al actualizar el fork: `git switch master && git pull`, luego
+     `git switch anime/phase0 && git merge master` (o rebase si no está publicada).
+  3. No commitear directamente en `master` para que el pull del fork sea limpio.
