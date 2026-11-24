@@ -326,10 +326,11 @@ y Oak en la calle).
   ```bash
   git switch master && git pull
   ```
-- **`anime/phase0`** = rama de desarrollo del hack (todo el trabajo de Fase 0).
-  Publicada como `origin/anime/phase0`.
+- **`pokemon-anime-edition`** = rama del proyecto (el juego completo que estamos
+  construyendo sobre la base de Esmeralda). Publicada como
+  `origin/pokemon-anime-edition`.
 - Flujo recomendado:
-  1. Trabajar y commitear en `anime/phase0`.
+  1. Trabajar y commitear en `pokemon-anime-edition`.
   2. Al actualizar el fork: `git switch master && git pull`, luego
-     `git switch anime/phase0 && git merge master` (o rebase si no está publicada).
+     `git switch pokemon-anime-edition && git merge master` (o rebase si no está publicada).
   3. No commitear directamente en `master` para que el pull del fork sea limpio.
