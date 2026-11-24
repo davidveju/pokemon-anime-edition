@@ -1230,11 +1230,6 @@
 #define FLAG_ANIME_PIKACHU_OBEDIENT                           0x498 // Anime: Pikachu obeys (set on Route 1)
 #define FLAG_ANIME_CHARIZARD_OBEDIENT                         0x499 // Anime: Charmeleon/Charizard obey
 #define FLAG_ANIME_FOLLOWERS_DISABLED                         0x49A // Anime: followers disabled override
-#define FLAG_UNUSED_0x49B                                           0x49B // Unused Flag
-#define FLAG_UNUSED_0x49C                                           0x49C // Unused Flag
-#define FLAG_UNUSED_0x49D                                           0x49D // Unused Flag
-#define FLAG_UNUSED_0x49E                                           0x49E // Unused Flag
-#define FLAG_UNUSED_0x49F                                           0x49F // Unused Flag
 #define FLAG_UNUSED_0x4A0                                           0x4A0 // Unused Flag
 #define FLAG_UNUSED_0x4A1                                           0x4A1 // Unused Flag
 #define FLAG_UNUSED_0x4A2                                           0x4A2 // Unused Flag

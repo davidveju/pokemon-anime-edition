@@ -92,7 +92,8 @@
  *    the selection, then go back to Task_HighlightSelectedMainMenuItem.
  *
  * Task_HandleMainMenuAPressed
- *  - If the user selected New Game, launch StartNewGameSceneAnime (Oak).
+ *  - If the user selected New Game, start the game directly with CB2_NewGame
+ *    (no Oak speech; see the boot flow note below).
  *  - If the user selected Continue, advance to CB2_ContinueSavedGame.
  *  - If the user selected the Options menu, advance to CB2_InitOptionMenu.
  *  - If the user selected Mystery Gift, advance to CB2_InitMysteryGift. However,
@@ -115,10 +116,11 @@
  *    before the main menu and stores it in gSelectedBootLanguage.
  *  - Then advances to Task_MainMenuCheckSaveFile.
  *
- * StartNewGameSceneAnime (on New Game, see src/oak_speech.c)
- *  - Classic Professor Oak intro in the boot language: world presentation,
- *    visual boy/girl selection, naming screen (ASH / HOJA), rival fixed as
- *    GARY, shrink animation, then CB2_NewGame into MAP_PALLET_TOWN.
+ * New Game
+ *  - The Oak speech (src/oak_speech.c) is intentionally NOT used: it is an
+ *    FRLG-only scene and was unstable with IS_FRLG=0. The main menu is already
+ *    faded to black, so it starts CB2_NewGame directly with gender/name set
+ *    (MALE + "ASH"). WarpToTruck() is the single warp source (bedroom 2F).
  */
 
 #define OPTION_MENU_FLAG (1 << 15)
@@ -961,9 +963,7 @@ static void Task_HandleMainMenuAPressed(u8 taskId)
         {
         case ACTION_NEW_GAME:
         default:
-            // Pokemon Anime Edition: fade to black (already started when A
-            // was pressed) and launch the classic Professor Oak intro, which
-            // ends in CB2_NewGame.
+            // Pokemon Anime Edition: already faded to black when A was pressed.
             DestroyTask(taskId);
             FreeAllWindowBuffers();
             if (action != ACTION_OPTION)

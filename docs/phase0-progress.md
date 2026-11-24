@@ -250,3 +250,43 @@ Antes de tocar arranque, mapas de Kanto o multiidioma:
 - [ ] Textos: ≤35 caracteres por línea y sin `ã/õ/Ã/Õ` en portugués.
 - [ ] `make -j3` sin errores/warnings nuevos y ROM usada < 32 MiB.
 - [ ] Tras compilar, `python3 tools/anime-debug/boottest.py` → `FIELD OK`.
+
+---
+
+## 9. Auditoría de cambios del fork (`10e22cf91e..HEAD`) — 2026-11-24
+
+**Alcance:** 5 commits nuestros (`32bb7793cb`, `a8b5662d9e`, `3024c86776`,
+`9fe3c32b88`, `28f28e588f`).
+
+### 9.1 Ruido de fin de línea (corregido)
+- 110 archivos aparecían cambiados; **61 eran solo EOL/espacios** (contenido
+  idéntico al normalizar CRLF→LF), arrastrados por el editor en `3024c86776`
+  (scripts de migración, `dev_scripts/`, licencias de `tools/`, `.all-contributorsrc`, `docs/book.toml`…).
+- **Acción:** revertidos esos 61 a la versión de `10e22cf91e`. El diff del fork
+  queda solo con cambios reales.
+
+### 9.2 Flags duplicadas (corregido)
+- Las 5 flags nuevas convivían con sus `FLAG_UNUSED_0x49B..0x49F` (mismo valor).
+- **Acción:** eliminadas las definiciones `FLAG_UNUSED_0x49x`. Ahora
+  `0x493–0x49F` son únicas (verificado por script).
+
+### 9.3 Textos (OK)
+- 0 caracteres `ã/õ/Ã/Õ` en los `.inc` modificados.
+- 0 líneas visibles > 35 caracteres (contando `{PLAYER}` como 3 y `{RIVAL}` como 4).
+
+### 9.4 Variables (OK)
+- `VARS_END = 0x40FF`; no se añadieron variables nuevas.
+
+### 9.5 Compilación y pruebas (OK)
+- `make -j3`: 0 errores / 0 warnings.
+- `make -j3 pokeemerald-test.elf`: enlaza correctamente (incluye el cambio de `test/text.c`).
+- ROM usada: **28.448.140 B (84,78 %)**.
+- `tools/anime-debug/boottest.py`: `FIELD OK map=(1,38) pos=(5,6)`.
+
+### 9.6 Riesgo preexistente detectado (no corregido aún)
+- Cientos de flags `FLAG_HIDE_*` de FRLG siguen **stubbeadas a `0`** (heredado
+  del port). Con `flagId = 0` los objetos están siempre visibles; en las fases
+  de Kanto habrá que reasignarlas a flags libres (como se hizo con las 5 del
+  arranque: `0x49B–0x49F`).
+- `src/main_menu.c` ya no referencia `StartNewGameSceneAnime`; `src/oak_speech.c`
+  queda compilado pero fuera del flujo (no borrar sin revisar `include/oak_speech.h`).
