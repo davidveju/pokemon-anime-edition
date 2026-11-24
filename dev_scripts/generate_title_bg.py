@@ -1,189 +1,140 @@
 #!/usr/bin/env python3
-"""Genera el fondo del título (BG0) con temática Kanto/anime.
+"""Genera el fondo estilo Pokémon Amarillo y la capa de destellos.
 
-Sustituye el panorama de Rayquaza por Pueblo Paleta: cielo, montañas, colinas,
-casas y un Pikachu en primer plano. Mantiene el formato del motor:
-  - graphics/title_screen/kanto.png       128x128, atlas de tiles (16x16)
-  - graphics/title_screen/kanto.bin       tilemap 32x32 (u16 LE)
-  - graphics/title_screen/kanto_and_clouds.pal  banco 14 (JASC-PAL)
+Salidas:
+  - graphics/title_screen/yellow_bg.png    atlas 128x128 (16x16 tiles)
+  - graphics/title_screen/yellow_bg.bin    tilemap 32x32 (u16 LE)
+  - graphics/title_screen/yellow_bg.pal    paleta JASC de 16 colores (banco 14)
+  - graphics/title_screen/sparkles.png     128x56, 16 colores
+  - graphics/title_screen/sparkles.bin     tilemap 32x32 (u16 LE, banco 14)
 
-El PNG es un atlas: cada tile 8x8 único se coloca en orden (16 por fila) para
-que el conversor del build genere exactamente los índices que usa el tilemap.
-El tilemap usa el banco de paleta 14 para todos los tiles. La capa de nubes
-(BG1) comparte ese banco y usa los índices 0 (transparente), 2 (blanco) y
-12 (gris claro): esos tres se mantienen compatibles.
+El fondo BG0 es un sunburst amarillo con un Pikachu grande en primer plano.
+El Pikachu se toma de `pikachu_yellow.png` (128x88, índice 0 transparente),
+extraído y limpiado del arte de referencia de Pokémon Amarillo y cuantizado a
+esta misma paleta de 16 colores. La capa BG1 son destellos semitransparentes que
+se desplazan sobre el fondo. El PNG de BG0 es un atlas de tiles para no superar
+los 512 tiles del char base.
 
 Uso: python3 dev_scripts/generate_title_bg.py
 """
 
+import math
 import os
 import struct
 
 from PIL import Image, ImageDraw
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT_PNG = os.path.join(REPO, "graphics/title_screen/kanto.png")
-OUT_BIN = os.path.join(REPO, "graphics/title_screen/kanto.bin")
-OUT_PAL = os.path.join(REPO, "graphics/title_screen/kanto_and_clouds.pal")
-OUT_GBAPAL = os.path.join(REPO, "graphics/title_screen/kanto_and_clouds.gbapal")
+OUT_DIR = os.path.join(REPO, "graphics/title_screen")
 
 W, H = 240, 160
-ATLAS_COLS = 16
-ATLAS_ROWS = 16
-BANK = 14  # banco de paleta usado por BG0 y las nubes
+ATLAS_COLS, ATLAS_ROWS = 16, 16
+BANK = 14
 
-# Índices de paleta (0 = transparente; el cielo usa 1/3/4/5)
-SKY_DEEP, SKY_MID, SKY_LIGHT, SKY_PALE = 1, 3, 4, 5
-WHITE, CLOUD_GREY = 2, 12
-GRASS_LIGHT, GRASS, GRASS_DARK = 6, 7, 8
-SAND, WALL, OUTLINE = 9, 10, 11
-MOUNTAIN, RED, YELLOW = 13, 14, 15
-SKY = SKY_DEEP
-
+# 0 = transparente; el fondo usa 1..15
 PALETTE = [
-    (16, 40, 120),    # 0 azul profundo (fondo de cielo / transparente en BG1)
-    (40, 72, 160),    # 1 azul noche
-    (255, 255, 255),  # 2 blanco (nubes)
-    (72, 120, 216),   # 3 azul medio
-    (128, 184, 248),  # 4 azul claro
-    (200, 232, 255),  # 5 azul pálido (reserva)
-    (152, 216, 112),  # 6 verde claro
-    (96, 184, 80),    # 7 verde
-    (56, 136, 56),    # 8 verde oscuro
-    (216, 184, 120),  # 9 camino
-    (232, 232, 232),  # 10 pared
-    (40, 48, 64),     # 11 contorno
-    (208, 208, 208),  # 12 gris claro (nubes)
-    (120, 136, 168),  # 13 montaña
-    (200, 64, 56),    # 14 tejado / mejillas
-    (248, 208, 48),   # 15 amarillo Pikachu
+    (0, 0, 0),        # 0 transparente
+    (255, 248, 208),  # 1 crema
+    (255, 220, 0),    # 2 amarillo Pikachu
+    (248, 192, 0),    # 3 oro (rayos)
+    (255, 255, 255),  # 4 blanco
+    (216, 152, 0),    # 5 oro oscuro
+    (28, 24, 20),     # 6 contorno
+    (80, 56, 24),     # 7 marrón
+    (224, 48, 48),    # 8 rojo mejillas
+    (255, 136, 136),  # 9 rosa boca
+    (255, 246, 128),  # 10 amarillo claro
+    (255, 176, 48),   # 11 naranja
+    (224, 224, 224),  # 12 gris claro
+    (64, 96, 200),    # 13 azul
+    (160, 32, 32),    # 14 rojo oscuro
+    (120, 80, 40),    # 15 marrón claro
 ]
 
-
-def draw_scene(img):
-    d = ImageDraw.Draw(img)
-
-    # Cielo por bandas (pocos tiles únicos)
-    d.rectangle([0, 0, W, 44], fill=SKY_DEEP)
-    d.rectangle([0, 44, W, 72], fill=SKY_MID)
-    d.rectangle([0, 72, W, 90], fill=SKY_LIGHT)
-    d.rectangle([0, 90, W, 100], fill=SKY_PALE)
-
-    # Nubes estáticas (la capa BG1 añade nubes animadas encima)
-    def cloud(cx, cy, s):
-        d.ellipse([cx - 15 * s, cy - 5 * s, cx + 15 * s, cy + 5 * s], fill=WHITE)
-        d.ellipse([cx - 22 * s, cy - 1 * s, cx - 3 * s, cy + 5 * s], fill=WHITE)
-        d.ellipse([cx + 3 * s, cy - 3 * s, cx + 23 * s, cy + 5 * s], fill=WHITE)
-        d.rectangle([cx - 21 * s, cy + 3 * s, cx + 21 * s, cy + 5 * s], fill=CLOUD_GREY)
-
-    cloud(42, 34, 1)
-    cloud(206, 54, 1)
-
-    # Montañas con nieve
-    d.polygon([(0, 106), (52, 66), (104, 106)], fill=MOUNTAIN)
-    d.polygon([(62, 106), (124, 56), (186, 106)], fill=MOUNTAIN)
-    d.polygon([(152, 106), (210, 70), (240, 106)], fill=MOUNTAIN)
-    d.polygon([(41, 78), (52, 66), (63, 78)], fill=WHITE)
-    d.polygon([(112, 69), (124, 56), (136, 69)], fill=WHITE)
-    d.polygon([(201, 81), (210, 70), (219, 81)], fill=WHITE)
-
-    # Colinas y suelo
-    d.rectangle([0, 98, W, H], fill=GRASS)
-    d.ellipse([-50, 92, 130, 210], fill=GRASS_LIGHT)
-    d.ellipse([70, 104, 280, 230], fill=GRASS)
-    d.ellipse([-40, 128, 150, 240], fill=GRASS_DARK)
-    d.ellipse([160, 122, 330, 236], fill=GRASS_DARK)
-    d.ellipse([100, 114, 200, 200], fill=GRASS_LIGHT)
-
-    # Camino de Pueblo Paleta
-    d.polygon([(110, 160), (150, 160), (142, 132), (124, 132)], fill=SAND)
-    d.polygon([(124, 132), (142, 132), (138, 124), (128, 124)], fill=SAND)
-
-    # Casas
-    def house(x, y, w, h):
-        # pared
-        d.rectangle([x, y + 9, x + w, y + 9 + h], fill=WALL, outline=OUTLINE)
-        # tejado
-        d.polygon(
-            [(x - 4, y + 10), (x + w // 2, y), (x + w + 4, y + 10)],
-            fill=RED,
-            outline=OUTLINE,
-        )
-        # puerta
-        d.rectangle([x + w // 2 - 4, y + 9 + h - 13, x + w // 2 + 4, y + 9 + h],
-                    fill=OUTLINE)
-        # ventanas
-        d.rectangle([x + 5, y + 15, x + 13, y + 22], fill=SKY_LIGHT, outline=OUTLINE)
-        d.rectangle([x + w - 13, y + 15, x + w - 5, y + 22],
-                    fill=SKY_LIGHT, outline=OUTLINE)
-
-    house(18, 104, 42, 24)
-    house(78, 100, 36, 22)
-    house(138, 108, 30, 18)
-
-    # Árboles
-    def tree(x, y, s):
-        d.rectangle([x - s, y - 8 * s, x + s, y], fill=OUTLINE)
-        d.ellipse([x - 9 * s, y - 22 * s, x + 9 * s, y - 4 * s],
-                  fill=GRASS_DARK)
-        d.ellipse([x - 6 * s, y - 20 * s, x + 6 * s, y - 7 * s], fill=GRASS)
-
-    tree(6, 140, 1)
-    tree(70, 144, 1)
-    tree(176, 142, 1)
-    tree(232, 150, 1)
-
-    # Pikachu en primer plano (derecha, debajo del banner de versión)
-    def pikachu():
-        # cola (detrás del cuerpo)
-        d.polygon(
-            [(205, 136), (194, 128), (199, 123), (190, 117), (198, 118),
-             (193, 110), (207, 123), (202, 127), (210, 132)],
-            fill=YELLOW,
-            outline=OUTLINE,
-        )
-        # cuerpo y patas
-        d.ellipse([203, 128, 225, 150], fill=YELLOW, outline=OUTLINE)
-        d.ellipse([201, 146, 211, 153], fill=YELLOW, outline=OUTLINE)
-        d.ellipse([217, 146, 227, 153], fill=YELLOW, outline=OUTLINE)
-        # orejas
-        d.polygon([(205, 118), (199, 100), (210, 114)], fill=YELLOW, outline=OUTLINE)
-        d.polygon([(219, 114), (226, 100), (223, 119)], fill=YELLOW, outline=OUTLINE)
-        d.polygon([(199, 104), (199, 100), (203, 103)], fill=OUTLINE)
-        d.polygon([(226, 104), (226, 100), (224, 104)], fill=OUTLINE)
-        # cabeza
-        d.ellipse([202, 110, 224, 132], fill=YELLOW, outline=OUTLINE)
-        # ojos
-        d.rectangle([206, 117, 208, 121], fill=OUTLINE)
-        d.rectangle([217, 117, 219, 121], fill=OUTLINE)
-        d.point((207, 118), fill=WHITE)
-        d.point((218, 118), fill=WHITE)
-        # mejillas
-        d.rectangle([202, 122, 206, 125], fill=RED)
-        d.rectangle([220, 122, 224, 125], fill=RED)
-        # nariz y boca
-        d.point((213, 122), fill=OUTLINE)
-        d.line([(211, 125), (213, 126), (215, 125)], fill=OUTLINE)
-        # brazos
-        d.ellipse([199, 132, 205, 138], fill=YELLOW, outline=OUTLINE)
-        d.ellipse([223, 132, 229, 138], fill=YELLOW, outline=OUTLINE)
-
-    pikachu()
+TRANSPARENT, CREAM, YELLOW, GOLD, WHITE = 0, 1, 2, 3, 4
+DARK_GOLD, OUTLINE, BROWN, RED, PINK = 5, 6, 7, 8, 9
+LIGHT_YELLOW, ORANGE, LIGHT_GRAY = 10, 11, 12
 
 
-def main():
-    scene = Image.new("P", (W, H), SKY)
+def draw_sunburst(d):
+    cx, cy, radius = 120, 78, 320
+    for i in range(16):
+        a0 = math.radians(i * 360 / 16)
+        a1 = math.radians((i + 1) * 360 / 16)
+        if i % 2 == 0:
+            d.polygon(
+                [
+                    (cx, cy),
+                    (cx + radius * math.cos(a0), cy + radius * math.sin(a0)),
+                    (cx + radius * math.cos(a1), cy + radius * math.sin(a1)),
+                ],
+                fill=GOLD,
+            )
+
+
+def draw_bolt(d, x, y, s):
+    d.polygon(
+        [
+            (x, y),
+            (x + 3 * s, y + 10 * s),
+            (x + 1 * s, y + 10 * s),
+            (x + 5 * s, y + 22 * s),
+            (x - 2 * s, y + 12 * s),
+            (x, y + 12 * s),
+        ],
+        fill=WHITE,
+        outline=GOLD,
+    )
+
+
+def draw_star(d, x, y, s):
+    d.polygon(
+        [
+            (x, y - 2 * s),
+            (x + s, y - s),
+            (x, y),
+            (x + s, y + s),
+            (x, y + 2 * s),
+            (x - s, y + s),
+            (x, y),
+            (x - s, y - s),
+        ],
+        fill=WHITE,
+    )
+
+
+def make_scene():
+    scene = Image.new("P", (W, H), CREAM)
     scene.putpalette([c for rgb in PALETTE for c in rgb])
-    draw_scene(scene)
+    d = ImageDraw.Draw(scene)
+    draw_sunburst(d)
+    draw_bolt(d, 44, 58, 1)
+    draw_bolt(d, 194, 74, 1)
+    for x, y, s in [(30, 95, 2), (205, 45, 1), (25, 30, 1),
+                    (215, 120, 1), (178, 70, 1), (60, 125, 1)]:
+        draw_star(d, x, y, s)
 
-    # Deduplicar tiles 8x8 en orden de aparición.
+    # Pikachu extraído del arte de Pokémon Amarillo y limpiado/quantizado.
+    pika = Image.open(os.path.join(OUT_DIR, "pikachu_yellow.png"))
+    scene_px = scene.load()
+    pika_px = pika.load()
+    px, py = (W - pika.width) // 2, 68
+    for y in range(pika.height):
+        for x in range(pika.width):
+            v = pika_px[x, y]
+            if v != TRANSPARENT:
+                scene_px[px + x, py + y] = v
+    return scene
+
+
+def make_atlas(scene):
     tiles = {}
     order = []
     entries = []
     for ty in range(20):
         for tx in range(32):
             if tx >= W // 8:
-                entries.append(BANK << 12)  # fuera de la imagen: tile 0
+                entries.append(BANK << 12)
                 continue
             patch = scene.crop((tx * 8, ty * 8, tx * 8 + 8, ty * 8 + 8))
             data = patch.tobytes()
@@ -191,38 +142,66 @@ def main():
                 tiles[data] = len(order)
                 order.append(patch)
             entries.append(tiles[data] | (BANK << 12))
-    # filas 20..31 (fuera de pantalla): tile de cielo
     for _ in range((32 - 20) * 32):
         entries.append(BANK << 12)
 
-    print("tiles únicos:", len(order), "/", ATLAS_COLS * ATLAS_ROWS)
-    assert len(order) <= ATLAS_COLS * ATLAS_ROWS, (
-        "demasiados tiles únicos; simplifica el dibujo"
-    )
-
-    # Atlas 16x16: el conversor del build genera los tiles en este orden.
-    atlas = Image.new("P", (ATLAS_COLS * 8, ATLAS_ROWS * 8), SKY)
+    assert len(order) <= ATLAS_COLS * ATLAS_ROWS, "demasiados tiles únicos"
+    atlas = Image.new("P", (ATLAS_COLS * 8, ATLAS_ROWS * 8), CREAM)
     atlas.putpalette([c for rgb in PALETTE for c in rgb])
     for i, patch in enumerate(order):
         atlas.paste(patch, ((i % ATLAS_COLS) * 8, (i // ATLAS_COLS) * 8))
+    return atlas, entries, len(order)
 
-    atlas.save(OUT_PNG)
-    with open(OUT_BIN, "wb") as f:
-        f.write(struct.pack("<%dH" % len(entries), *entries))
 
-    # Fuente versionada (JASC-PAL): el build la convierte a .gbapal.
-    with open(OUT_PAL, "w", newline="\r\n") as f:
+def make_sparkles():
+    img = Image.new("P", (128, 56), TRANSPARENT)
+    img.putpalette([c for rgb in PALETTE for c in rgb])
+    d = ImageDraw.Draw(img)
+    # No dibujar en el tile 0 (0..7,0..7): se usa como tile vacío.
+    stars = [
+        (24, 12, 1), (48, 30, 2), (80, 18, 1), (104, 42, 1),
+        (136, 24, 2), (16, 48, 1), (72, 50, 1), (120, 8, 1),
+        (92, 34, 1), (40, 50, 1), (112, 52, 1),
+    ]
+    for x, y, s in stars:
+        draw_star(d, x, y, s)
+        d.point((x, y), fill=GOLD)
+    # Pequeños destellos dorados
+    for x, y in [(32, 22), (58, 8), (88, 44), (128, 36), (8, 32)]:
+        d.rectangle([x, y, x + 1, y + 1], fill=GOLD)
+
+    entries = []
+    for ty in range(32):
+        for tx in range(32):
+            idx = (ty * 16 + tx) | (BANK << 12) if tx < 16 and ty < 7 else (BANK << 12)
+            entries.append(idx)
+    return img, entries
+
+
+def main():
+    scene = make_scene()
+    atlas, bg_entries, count = make_atlas(scene)
+    sparkles, spark_entries = make_sparkles()
+
+    atlas.save(os.path.join(OUT_DIR, "yellow_bg.png"))
+    with open(os.path.join(OUT_DIR, "yellow_bg.bin"), "wb") as f:
+        f.write(struct.pack("<%dH" % len(bg_entries), *bg_entries))
+    sparkles.save(os.path.join(OUT_DIR, "sparkles.png"))
+    with open(os.path.join(OUT_DIR, "sparkles.bin"), "wb") as f:
+        f.write(struct.pack("<%dH" % len(spark_entries), *spark_entries))
+
+    with open(os.path.join(OUT_DIR, "yellow_bg.pal"), "w", newline="\r\n") as f:
         f.write("JASC-PAL\n0100\n16\n")
         for r, g, b in PALETTE:
             f.write(f"{r} {g} {b}\n")
-
-    # Copia ya convertida para poder compilar sin esperar al conversor.
-    with open(OUT_GBAPAL, "wb") as f:
+    with open(os.path.join(OUT_DIR, "yellow_bg.gbapal"), "wb") as f:
         for r, g, b in PALETTE:
             c = ((r >> 3) & 0x1F) | (((g >> 3) & 0x1F) << 5) | (((b >> 3) & 0x1F) << 10)
             f.write(struct.pack("<H", c))
 
-    print("escrito:", OUT_PNG, OUT_BIN, OUT_PAL, OUT_GBAPAL)
+    scene.resize((W * 3, H * 3), Image.NEAREST).save("/tmp/opencode/yellow_bg_preview.png")
+    print("tiles únicos:", count, "/", ATLAS_COLS * ATLAS_ROWS)
+    print("escritos: yellow_bg.png/.bin/.pal y sparkles.png/.bin")
 
 
 if __name__ == "__main__":

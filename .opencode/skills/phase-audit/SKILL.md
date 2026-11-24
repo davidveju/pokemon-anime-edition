@@ -46,13 +46,14 @@ Ejecuta estas comprobaciones antes de dar por cerrada cualquier fase.
    - Actualizar `docs/phase0-progress.md` si cambia el arranque, Kanto o el multiidioma.
 
 8. **Título:**
-   - Si se toca el banner, regenerarlo con `dev_scripts/generate_title_version.py`.
-   - Si se toca el fondo BG0, regenerarlo con `dev_scripts/generate_title_bg.py`.
-     El PNG de `kanto.png` debe seguir siendo un **atlas 16x16**; una escena
-     completa de 240x160 desborda los 512 tiles del char base y rompe el
-     tilemap.
-   - Si se toca “PRESS START”/copyright, regenerar las 4 hojas con
-     `dev_scripts/generate_title_press_start.py`.
+   - Fondo BG0: regenerar con `dev_scripts/generate_title_bg.py`; `yellow_bg.png`
+     debe seguir siendo un **atlas 16x16** y el Pikachu se toma de
+     `pikachu_yellow.png`.
+   - Logo: regenerar con `dev_scripts/generate_title_logo.py` desde
+     `pokemon_logo_source.png`; `pokemon_logo.png` (256x64, paleta de 224 colores)
+     + `pokemon_logo.bin` (1024 bytes).
+   - “PRESS START”/copyright: `dev_scripts/generate_title_press_start.py`.
+   - Verificar que el logo no se corte (`tBg2Y=-8`, sin reset en fase 3).
 
 9. **Selector de idioma al arrancar:**
    - Debe mostrar las 4 opciones y, al elegir, el menú principal. Comprobar

@@ -3,7 +3,7 @@
 > Última actualización: 2026-11-24
 > Rama de desarrollo: `pokemon-anime-edition` (publicada en `origin`).
 > Base: `master` = `origin/master` (`10e22cf91e`, Esmeralda prístina).
-> ROM de referencia: `pokemon-anime-edition.gba` — **28.489.388 B usados (84,90 %)**, por debajo del límite de 32 MiB.
+> ROM de referencia: `pokemon-anime-edition.gba` — **28.488.004 B usados (84,90 %)**, por debajo del límite de 32 MiB.
 
 Este documento resume **qué está hecho, cómo está hecho y qué no debe romperse**.
 Si algo de aquí se cambia, actualizar este archivo en el mismo commit.
@@ -104,30 +104,36 @@ Boot GBA
 
 ## 3. Intro estilo anime (EP001)
 
-### 3.0 Intro y título (estilo Amarillo / Kanto)
+### 3.0 Intro y título (estilo Amarillo)
 - El splash de expansión encadena ahora **siempre** con el intro de FRLG
   (`CB2_SetUpIntroFrlg()` en `src/expansion_intro.c`), que muestra el combate
   **Gengar vs Nidorino** (el clásico de Gen 1 / Amarillo) y termina en
   `CB2_InitTitleScreen()`.
 - No depende de `IS_FRLG`; el `.c` del intro FRLG ya se compilaba en Emerald.
-- **Título (banner):** el banner de versión dice **“ANIME EDITION”** (amarillo
-  con contorno azul, a juego con el logo). Se genera con
-  `python3 dev_scripts/generate_title_version.py`, que escribe
-  `graphics/title_screen/emerald_version.png` (128x32, 16 colores).
-- **Título (fondo BG0):** en vez de Rayquaza, muestra **Pueblo Paleta**: cielo,
-  montañas, colinas, casas, camino, árboles y un **Pikachu** en primer plano.
-  Las nubes de BG1 se conservan y se desplazan por delante.
-  - Assets: `graphics/title_screen/kanto.png` (atlas 128x128 de 16x16 tiles),
-    `kanto.bin` (tilemap 32x32) y `kanto_and_clouds.pal` (banco 14).
+- **Título (logo):** el antiguo banner de versión se retiró. El wordmark
+  **Pokémon** y el óvalo **Pika!** se extrajeron del logo auténtico de Pokémon
+  Amarillo (`pokemon_logo_source.png`), se limpiaron y se les añadió
+  **ANIME** / **EDITION** en los laterales (en el hueco de "YELLOW VERSION").
+  `pokemon_logo.png` (256x64, paleta de 224 colores) se genera con
+  `python3 dev_scripts/generate_title_logo.py`; el tilemap `pokemon_logo.bin`
+  referencia los 256 tiles secuenciales de la imagen y deja el resto en el tile 0.
+- **Título (fondo estilo Amarillo):** BG0 es un sunburst amarillo con el
+  **Pikachu original** extraído de la imagen de referencia de Pokémon Amarillo,
+  limpiado (fondo blanco fuera) y cuantizado a la paleta de 16 colores. BG1 son
+  destellos animados que se desplazan sobre el fondo.
+  - Assets: `graphics/title_screen/yellow_bg.png` (atlas 128x128 de 16x16 tiles),
+    `yellow_bg.bin` (tilemap 32x32), `yellow_bg.pal` (banco 14),
+    `sparkles.png/.bin` (BG1) y `pikachu_yellow.png` (128x88, índice 0
+    transparente) como fuente del Pikachu.
   - Generador: `python3 dev_scripts/generate_title_bg.py`.
-  - **Trampa:** el PNG debe ser un **atlas de tiles**, no la escena completa:
-    el build convierte todos los tiles en orden secuencial. Una escena de
-    240x160 son 600 tiles (>512 del char base) y los índices del tilemap no
-    coinciden. El atlas 16x16 mantiene 226 tiles únicos y el tilemap referencia
-    exactamente ese orden.
-  - Se retiró `UpdateLegendaryMarkingColor()` (animaba las marcas de Rayquaza
-    sobre el índice 15 del banco 14); ahora el índice 15 es el amarillo de
-    Pikachu.
+  - **Trampa del atlas:** el PNG de BG0 debe ser un **atlas de tiles**, no la
+    escena completa: el build convierte los tiles en orden secuencial y una
+    escena de 240x160 supera los 512 tiles del char base. El atlas 16x16 usa
+    ~204 tiles únicos.
+  - **Logo:** el BG2 se desplaza a `tBg2Y = -8` para dejar margen superior; la
+    fase 3 **no** debe volver a poner `BG2Y` a 0 (eso cortaba el logo).
+  - El antiguo `UpdateLegendaryMarkingColor()` sigue retirado; el índice 15 del
+    banco 14 es el amarillo de Pikachu.
   - **“PRESS START” y copyright localizados:** `press_start_es/en/pt/it.png`
     (160x24, 5 segmentos de 32x8 para la frase + 5 para el copyright). Textos:
     `PULSA START`, `PRESS START`, `PRESSIONE START`, `PREMI START`; copyright
@@ -266,8 +272,8 @@ Ver `docs/anime-debug.md`. Resumen:
 | Barra del teclado de nombres | `MOVER OK VOLVER` verificada |
 | Selector de idioma al arrancar | 4 opciones visibles y seleccionables (ES/EN/PT/IT) |
 | Menú principal tras idioma | `NUEVA PARTIDA` / `OPCIONES` visibles (ES) |
-| Título | “PULSA START” + “© 2026 ANIME EDITION” verificados |
-| Tamaño de ROM | 28.489.388 B usados (84,90 %) |
+| Título estilo Amarillo | Pikachu y logo auténticos de Amarillo + “PULSA START” verificados |
+| Tamaño de ROM | 28.488.004 B usados (84,90 %) |
 
 ---
 
@@ -332,7 +338,7 @@ Antes de tocar arranque, mapas de Kanto o multiidioma:
 ### 9.5 Compilación y pruebas (OK)
 - `make -j3`: 0 errores / 0 warnings.
 - `make -j3 pokeemerald-test.elf`: enlaza correctamente (incluye el cambio de `test/text.c`).
-- ROM usada: **28.489.388 B (84,90 %)**.
+- ROM usada: **28.488.004 B (84,90 %)**.
 - `tools/anime-debug/boottest.py`: `FIELD OK map=(1,38) pos=(5,6)`.
 
 ### 9.6 Riesgo preexistente detectado (no corregido aún)
