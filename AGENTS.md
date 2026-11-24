@@ -46,6 +46,7 @@
 - **Flags 0x49B–0x49F:** `FLAG_HIDE_BULBASAUR_BALL`, `..._SQUIRTLE_BALL`, `..._CHARMANDER_BALL`, `FLAG_HIDE_RIVAL_IN_LAB` y `FLAG_HIDE_OAK_IN_PALLET_TOWN` son flags reales y se activan en `NewGameInitData()` (antes estaban stubbeadas a `0` y los objetos aparecían siempre).
 - **Escena del laboratorio:** `VAR_MAP_SCENE_PALLET_TOWN_PROFESSOR_OAKS_LAB` pasa a `9` al entregar a Pikachu (nunca a `1`, que dispara la escena vanilla de los 3 starters) y `VAR_MAP_SCENE_PALLET_TOWN_OAK` se fija a `1` para desactivar el trigger de Oak del pueblo.
 - **Intro de arranque:** `src/expansion_intro.c` encadena siempre con `CB2_SetUpIntroFrlg()` (intro Kanto: Gengar vs Nidorino, estilo Amarillo), que termina en el título genérico. No volver a encerrarlo tras `IS_FRLG`.
+- **Título:** el banner de versión es `graphics/title_screen/emerald_version.png` (128x32, 16 colores) y dice “ANIME EDITION”. Regenerarlo con `python3 dev_scripts/generate_title_version.py`; no editarlo a mano sin mantener tamaño y paleta indexada.
 - **Multiidioma de menús:** `GetAnimeYesNoText()` (`SÍ/NO`, `YES/NO`, `SIM/NAO`, `SÌ/NO`) y `GetAnimeMoveOkBackText()` viven en `src/event_data.c`; `src/menu.c` y `src/naming_screen.c` los consumen.
 
 ## Flags `unused` (Kanto/FRLG)

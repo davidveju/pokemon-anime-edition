@@ -94,9 +94,10 @@ Boot GBA
   **Gengar vs Nidorino** (el clásico de Gen 1 / Amarillo) y termina en
   `CB2_InitTitleScreen()`.
 - No depende de `IS_FRLG`; el `.c` del intro FRLG ya se compilaba en Emerald.
-- **Pendiente:** la pantalla de título sigue mostrando el logo de Esmeralda.
-  Cambiarlo por “Anime Edition” requiere arte nuevo (logo indexado) o editar
-  el gráfico de versión del título.
+- **Título:** el banner de versión ahora dice **“ANIME EDITION”** (amarillo con
+  contorno azul, a juego con el logo). Se genera con
+  `python3 dev_scripts/generate_title_version.py`, que escribe
+  `graphics/title_screen/emerald_version.png` (128x32, 16 colores).
 
 ### 3.1 Dormitorio (2F)
 - Spawn: `MAP_PALLET_TOWN_PLAYERS_HOUSE_2F` en `(5,6)`.
