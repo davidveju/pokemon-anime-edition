@@ -51,3 +51,10 @@ Ejecuta estas comprobaciones antes de dar por cerrada cualquier fase.
      El PNG de `kanto.png` debe seguir siendo un **atlas 16x16**; una escena
      completa de 240x160 desborda los 512 tiles del char base y rompe el
      tilemap.
+   - Si se toca “PRESS START”/copyright, regenerar las 4 hojas con
+     `dev_scripts/generate_title_press_start.py`.
+
+9. **Selector de idioma al arrancar:**
+   - Debe mostrar las 4 opciones y, al elegir, el menú principal. Comprobar
+     `InitWindows(sWindowTemplates_AnimeBoot)`, `WINOUT` con BG0+OBJ y los
+     colores 0xA/0xB/0xC; si falta, la pantalla queda azul.

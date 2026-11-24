@@ -1177,11 +1177,30 @@ static void Task_AnimeBootLanguageSelect(u8 taskId)
 {
     s16 *data = gTasks[taskId].data;
     s8 input;
+    u16 palette;
 
     if (data[0] == 0)
     {
         if (!gPaletteFade.active)
         {
+            // InitMainMenu deja WINOUT a 0 para el menú normal; la selección
+            // de idioma dibuja sus ventanas antes de que Task_MainMenuCheckSaveFile
+            // active la ventana hardware. Sin esto, BG0 queda oculta y solo se ve
+            // el fondo azul.
+            SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG0 | WININ_WIN0_OBJ);
+            SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG0 | WINOUT_WIN01_OBJ | WINOUT_WIN01_CLR);
+
+            // Las ventanas 0/1 se inicializaron con las plantillas del menú
+            // principal (26x2); el selector de idioma necesita 12x8 y sus
+            // colores dinámicos (0xA fondo, 0xB texto, 0xC sombra).
+            InitWindows(sWindowTemplates_AnimeBoot);
+            palette = RGB_WHITE;
+            LoadPalette(&palette, BG_PLTT_ID(15) + 10, PLTT_SIZEOF(1));
+            palette = RGB(12, 12, 12);
+            LoadPalette(&palette, BG_PLTT_ID(15) + 11, PLTT_SIZEOF(1));
+            palette = RGB(26, 26, 25);
+            LoadPalette(&palette, BG_PLTT_ID(15) + 12, PLTT_SIZEOF(1));
+
             FillWindowPixelBuffer(0, PIXEL_FILL(0xA));
             FillWindowPixelBuffer(1, PIXEL_FILL(0xA));
             AddTextPrinterParameterized3(0, FONT_NORMAL, 0, 1, sTextColor_Headers, TEXT_SKIP_DRAW, sText_AnimeBootLangPrompt);
@@ -1207,6 +1226,8 @@ static void Task_AnimeBootLanguageSelect(u8 taskId)
             ClearWindowTilemap(1);
             ClearMainMenuWindowTilemap(&sWindowTemplates_AnimeBoot[0]);
             ClearMainMenuWindowTilemap(&sWindowTemplates_AnimeBoot[1]);
+            // Restaurar las plantillas del menú principal para Task_DisplayMainMenu.
+            InitWindows(sWindowTemplates_MainMenu);
             memset(data, 0, sizeof(gTasks[taskId].data));
             gTasks[taskId].func = Task_MainMenuCheckSaveFile;
         }

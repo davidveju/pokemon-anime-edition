@@ -3,7 +3,7 @@
 > Última actualización: 2026-11-24
 > Rama de desarrollo: `pokemon-anime-edition` (publicada en `origin`).
 > Base: `master` = `origin/master` (`10e22cf91e`, Esmeralda prístina).
-> ROM de referencia: `pokemon-anime-edition.gba` — **28.448.140 B usados (84,78 %)**, por debajo del límite de 32 MiB.
+> ROM de referencia: `pokemon-anime-edition.gba` — **28.489.388 B usados (84,90 %)**, por debajo del límite de 32 MiB.
 
 Este documento resume **qué está hecho, cómo está hecho y qué no debe romperse**.
 Si algo de aquí se cambia, actualizar este archivo en el mismo commit.
@@ -84,6 +84,22 @@ Boot GBA
 - **Text speed**: se muestra solo el valor actual alineado a la derecha. Los tres
   valores ES/PT/IT no caben en la ventana (se probó y se desbordaba).
 
+### 2.5 Selector de idioma al arrancar (pantalla azul corregida)
+- `Task_AnimeBootLanguageSelect` (`src/main_menu.c`) se ejecuta tras el título y
+  antes del menú principal.
+- **Bug corregido:** la tarea usaba las ventanas 0/1 inicializadas con
+  `sWindowTemplates_MainMenu` (26x2) en vez de `sWindowTemplates_AnimeBoot`
+  (12x8); tampoco habilitaba `WINOUT` (BG0 quedaba oculto) ni cargaba los colores
+  dinámicos 0xA/0xB/0xC del texto. El resultado era una pantalla azul sin menú.
+- Correcciones aplicadas:
+  - `InitWindows(sWindowTemplates_AnimeBoot)` antes de dibujar.
+  - `WININ`/`WINOUT` con BG0 y OBJ visibles.
+  - `LoadPalette` de 0xA (blanco), 0xB (gris oscuro) y 0xC (casi negro).
+  - Al elegir idioma, `InitWindows(sWindowTemplates_MainMenu)` restaura las
+    plantillas del menú principal antes de `Task_MainMenuCheckSaveFile`.
+- Verificado en pantalla: las 4 opciones (Español/English/Português/Italiano) y
+  el menú principal `NUEVA PARTIDA`/`OPCIONES` se ven correctamente.
+
 ---
 
 ## 3. Intro estilo anime (EP001)
@@ -112,7 +128,13 @@ Boot GBA
   - Se retiró `UpdateLegendaryMarkingColor()` (animaba las marcas de Rayquaza
     sobre el índice 15 del banco 14); ahora el índice 15 es el amarillo de
     Pikachu.
-  - “PRESS START” y el banner de copyright siguen siendo los del motor.
+  - **“PRESS START” y copyright localizados:** `press_start_es/en/pt/it.png`
+    (160x24, 5 segmentos de 32x8 para la frase + 5 para el copyright). Textos:
+    `PULSA START`, `PRESS START`, `PRESSIONE START`, `PREMI START`; copyright
+    común `© 2026 ANIME EDITION`.
+    Generador: `python3 dev_scripts/generate_title_press_start.py`.
+    La hoja se elige con `gSelectedBootLanguage` (0..3; por defecto ES en el
+    primer arranque, porque el título se muestra antes del selector de idioma).
 
 ### 3.1 Dormitorio (2F)
 - Spawn: `MAP_PALLET_TOWN_PLAYERS_HOUSE_2F` en `(5,6)`.
@@ -242,7 +264,10 @@ Ver `docs/anime-debug.md`. Resumen:
 | Mamá / Oak / ayudantes / señora | visibles y con sprites correctos |
 | Menú YES/NO | `SÍ/NO` (ES) verificado en pantalla |
 | Barra del teclado de nombres | `MOVER OK VOLVER` verificada |
-| Tamaño de ROM | 28.448.140 B usados (84,78 %) |
+| Selector de idioma al arrancar | 4 opciones visibles y seleccionables (ES/EN/PT/IT) |
+| Menú principal tras idioma | `NUEVA PARTIDA` / `OPCIONES` visibles (ES) |
+| Título | “PULSA START” + “© 2026 ANIME EDITION” verificados |
+| Tamaño de ROM | 28.489.388 B usados (84,90 %) |
 
 ---
 
@@ -307,7 +332,7 @@ Antes de tocar arranque, mapas de Kanto o multiidioma:
 ### 9.5 Compilación y pruebas (OK)
 - `make -j3`: 0 errores / 0 warnings.
 - `make -j3 pokeemerald-test.elf`: enlaza correctamente (incluye el cambio de `test/text.c`).
-- ROM usada: **28.448.140 B (84,78 %)**.
+- ROM usada: **28.489.388 B (84,90 %)**.
 - `tools/anime-debug/boottest.py`: `FIELD OK map=(1,38) pos=(5,6)`.
 
 ### 9.6 Riesgo preexistente detectado (no corregido aún)

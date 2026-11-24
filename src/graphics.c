@@ -2112,8 +2112,14 @@ const u16 gTitleScreenEmeraldVersionPal[]  = INCGFX_U16("graphics/title_screen/e
 const u32 gTitleScreenCloudsTilemap[]      = INCGFX_U32("graphics/title_screen/clouds.bin", ".smolTM");
 const u32 gTitleScreenPokemonLogoGfx[]     = INCGFX_U32("graphics/title_screen/pokemon_logo.png", ".8bpp.smol");
 const u32 gTitleScreenEmeraldVersionGfx[]  = INCGFX_U32("graphics/title_screen/emerald_version.png", ".8bpp.smol", "-mwidth 8 -mheight 4");
-const u16 gTitleScreenPressStartPal[]      = INCGFX_U16("graphics/title_screen/press_start.png", ".gbapal");
-const u32 gTitleScreenPressStartGfx[]      = INCGFX_U32("graphics/title_screen/press_start.png", ".4bpp.smol", "-mwidth 4 -mheight 1 -num_tiles 48 -Wnum_tiles");
+const u16 gTitleScreenPressStartPal_ES[]    = INCGFX_U16("graphics/title_screen/press_start_es.png", ".gbapal");
+const u32 gTitleScreenPressStartGfx_ES[]    = INCGFX_U32("graphics/title_screen/press_start_es.png", ".4bpp.smol", "-mwidth 4 -mheight 1 -num_tiles 48 -Wnum_tiles");
+const u16 gTitleScreenPressStartPal_EN[]    = INCGFX_U16("graphics/title_screen/press_start_en.png", ".gbapal");
+const u32 gTitleScreenPressStartGfx_EN[]    = INCGFX_U32("graphics/title_screen/press_start_en.png", ".4bpp.smol", "-mwidth 4 -mheight 1 -num_tiles 48 -Wnum_tiles");
+const u16 gTitleScreenPressStartPal_PT[]    = INCGFX_U16("graphics/title_screen/press_start_pt.png", ".gbapal");
+const u32 gTitleScreenPressStartGfx_PT[]    = INCGFX_U32("graphics/title_screen/press_start_pt.png", ".4bpp.smol", "-mwidth 4 -mheight 1 -num_tiles 48 -Wnum_tiles");
+const u16 gTitleScreenPressStartPal_IT[]    = INCGFX_U16("graphics/title_screen/press_start_it.png", ".gbapal");
+const u32 gTitleScreenPressStartGfx_IT[]    = INCGFX_U32("graphics/title_screen/press_start_it.png", ".4bpp.smol", "-mwidth 4 -mheight 1 -num_tiles 48 -Wnum_tiles");
 const u32 gTitleScreenPokemonLogoTilemap[] = INCGFX_U32("graphics/title_screen/pokemon_logo.bin", ".smolTM");
 
 const u16 gFrontierPassBg_Pal[][16]                      = INCGFX_U16("graphics/frontier_pass/bg.png", ".gbapal"); // 8 x 16

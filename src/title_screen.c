@@ -1,4 +1,5 @@
 #include "global.h"
+#include "anime_boot.h"
 #include "battle.h"
 #include "config/quickstart.h"
 #include "quickstart.h"
@@ -290,20 +291,45 @@ static const struct SpriteTemplate sStartCopyrightBannerSpriteTemplate =
 static const struct CompressedSpriteSheet sSpriteSheet_PressStart[] =
 {
     {
-        .data = gTitleScreenPressStartGfx,
+        .data = gTitleScreenPressStartGfx_ES,
         .size = 0x520,
         .tag = TAG_PRESS_START_COPYRIGHT
     },
-    {},
+    {
+        .data = gTitleScreenPressStartGfx_EN,
+        .size = 0x520,
+        .tag = TAG_PRESS_START_COPYRIGHT
+    },
+    {
+        .data = gTitleScreenPressStartGfx_PT,
+        .size = 0x520,
+        .tag = TAG_PRESS_START_COPYRIGHT
+    },
+    {
+        .data = gTitleScreenPressStartGfx_IT,
+        .size = 0x520,
+        .tag = TAG_PRESS_START_COPYRIGHT
+    },
 };
 
 static const struct SpritePalette sSpritePalette_PressStart[] =
 {
     {
-        .data = gTitleScreenPressStartPal,
+        .data = gTitleScreenPressStartPal_ES,
         .tag = TAG_PRESS_START_COPYRIGHT
     },
-    {},
+    {
+        .data = gTitleScreenPressStartPal_EN,
+        .tag = TAG_PRESS_START_COPYRIGHT
+    },
+    {
+        .data = gTitleScreenPressStartPal_PT,
+        .tag = TAG_PRESS_START_COPYRIGHT
+    },
+    {
+        .data = gTitleScreenPressStartPal_IT,
+        .tag = TAG_PRESS_START_COPYRIGHT
+    },
 };
 
 static const struct OamData sPokemonLogoShineOamData =
@@ -593,6 +619,10 @@ void CB2_InitTitleScreen(void)
         gMain.state = 1;
         break;
     case 1:
+    {
+        u8 lang = gSelectedBootLanguage;
+        if (lang > ANIME_LANG_IT)
+            lang = ANIME_LANG_ES;
         // bg2
         DecompressDataWithHeaderVram(gTitleScreenPokemonLogoGfx, (void *)(BG_CHAR_ADDR(0)));
         DecompressDataWithHeaderVram(gTitleScreenPokemonLogoTilemap, (void *)(BG_SCREEN_ADDR(9)));
@@ -608,13 +638,14 @@ void CB2_InitTitleScreen(void)
         ResetSpriteData();
         FreeAllSpritePalettes();
         gReservedSpritePaletteCount = 9;
+        LoadCompressedSpriteSheet(&sSpriteSheet_PressStart[lang]);
         LoadCompressedSpriteSheet(&sSpriteSheet_EmeraldVersion[0]);
-        LoadCompressedSpriteSheet(&sSpriteSheet_PressStart[0]);
         LoadCompressedSpriteSheet(&sPokemonLogoShineSpriteSheet[0]);
         LoadPalette(gTitleScreenEmeraldVersionPal, OBJ_PLTT_ID(0), PLTT_SIZE_4BPP);
-        LoadSpritePalette(&sSpritePalette_PressStart[0]);
+        LoadSpritePalette(&sSpritePalette_PressStart[lang]);
         gMain.state = 2;
         break;
+    }
     case 2:
     {
         u8 taskId = CreateTask(Task_TitleScreenPhase1, 0);
