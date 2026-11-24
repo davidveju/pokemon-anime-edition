@@ -88,6 +88,16 @@ Boot GBA
 
 ## 3. Intro estilo anime (EP001)
 
+### 3.0 Intro de arranque (estilo Amarillo)
+- El splash de expansión encadena ahora **siempre** con el intro de FRLG
+  (`CB2_SetUpIntroFrlg()` en `src/expansion_intro.c`), que muestra el combate
+  **Gengar vs Nidorino** (el clásico de Gen 1 / Amarillo) y termina en
+  `CB2_InitTitleScreen()`.
+- No depende de `IS_FRLG`; el `.c` del intro FRLG ya se compilaba en Emerald.
+- **Pendiente:** la pantalla de título sigue mostrando el logo de Esmeralda.
+  Cambiarlo por “Anime Edition” requiere arte nuevo (logo indexado) o editar
+  el gráfico de versión del título.
+
 ### 3.1 Dormitorio (2F)
 - Spawn: `MAP_PALLET_TOWN_PLAYERS_HOUSE_2F` en `(5,6)`.
 - `PalletTown_PlayersHouse_2F_OnFrame` (var `VAR_MAP_SCENE_PALLET_TOWN_PLAYERS_HOUSE_2F`):

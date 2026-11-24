@@ -276,15 +276,10 @@ void Task_HandleExpansionIntro(u8 taskId)
             ResetSpriteData();
             FreeAllSpritePalettes();
             DestroyTask(taskId);
-            if (IS_FRLG)
-            {
-                SetMainCallback2(CB2_SetUpIntroFrlg);
-            }
-            else
-            {
-                CreateTask(Task_Scene1_Load, 0);
-                SetMainCallback2(MainCB2_Intro);
-            }
+            // Pokemon Anime Edition: use the Kanto intro (Gengar vs Nidorino,
+            // like the classic Gen 1 / Yellow opening) instead of the Emerald
+            // one. It ends at the regular title screen.
+            SetMainCallback2(CB2_SetUpIntroFrlg);
         }
         break;
     }
