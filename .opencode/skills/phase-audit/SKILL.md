@@ -44,3 +44,10 @@ Ejecuta estas comprobaciones antes de dar por cerrada cualquier fase.
 7. **Rama y documentación:**
    - Commitear en `pokemon-anime-edition` (nunca en `master`, que es la base del fork).
    - Actualizar `docs/phase0-progress.md` si cambia el arranque, Kanto o el multiidioma.
+
+8. **Título:**
+   - Si se toca el banner, regenerarlo con `dev_scripts/generate_title_version.py`.
+   - Si se toca el fondo BG0, regenerarlo con `dev_scripts/generate_title_bg.py`.
+     El PNG de `kanto.png` debe seguir siendo un **atlas 16x16**; una escena
+     completa de 240x160 desborda los 512 tiles del char base y rompe el
+     tilemap.

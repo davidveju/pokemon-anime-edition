@@ -47,6 +47,7 @@
 - **Escena del laboratorio:** `VAR_MAP_SCENE_PALLET_TOWN_PROFESSOR_OAKS_LAB` pasa a `9` al entregar a Pikachu (nunca a `1`, que dispara la escena vanilla de los 3 starters) y `VAR_MAP_SCENE_PALLET_TOWN_OAK` se fija a `1` para desactivar el trigger de Oak del pueblo.
 - **Intro de arranque:** `src/expansion_intro.c` encadena siempre con `CB2_SetUpIntroFrlg()` (intro Kanto: Gengar vs Nidorino, estilo Amarillo), que termina en el título genérico. No volver a encerrarlo tras `IS_FRLG`.
 - **Título:** el banner de versión es `graphics/title_screen/emerald_version.png` (128x32, 16 colores) y dice “ANIME EDITION”. Regenerarlo con `python3 dev_scripts/generate_title_version.py`; no editarlo a mano sin mantener tamaño y paleta indexada.
+- **Fondo del título:** BG0 es `graphics/title_screen/kanto.png` (atlas 128x128 de 16x16 tiles) + `kanto.bin` (tilemap 32x32), con paleta `kanto_and_clouds.pal` (banco 14, compartida con las nubes BG1: índice 0 transparente, 2 blanco, 12 gris claro). Regenerar con `python3 dev_scripts/generate_title_bg.py`. **No** usar una escena completa de 240x160: el conversor no deduplica, genera 600 tiles (>512 del char base) y el tilemap deja de coincidir; el PNG debe ser el atlas.
 - **Multiidioma de menús:** `GetAnimeYesNoText()` (`SÍ/NO`, `YES/NO`, `SIM/NAO`, `SÌ/NO`) y `GetAnimeMoveOkBackText()` viven en `src/event_data.c`; `src/menu.c` y `src/naming_screen.c` los consumen.
 
 ## Flags `unused` (Kanto/FRLG)

@@ -88,16 +88,31 @@ Boot GBA
 
 ## 3. Intro estilo anime (EP001)
 
-### 3.0 Intro de arranque (estilo Amarillo)
+### 3.0 Intro y título (estilo Amarillo / Kanto)
 - El splash de expansión encadena ahora **siempre** con el intro de FRLG
   (`CB2_SetUpIntroFrlg()` en `src/expansion_intro.c`), que muestra el combate
   **Gengar vs Nidorino** (el clásico de Gen 1 / Amarillo) y termina en
   `CB2_InitTitleScreen()`.
 - No depende de `IS_FRLG`; el `.c` del intro FRLG ya se compilaba en Emerald.
-- **Título:** el banner de versión ahora dice **“ANIME EDITION”** (amarillo con
-  contorno azul, a juego con el logo). Se genera con
+- **Título (banner):** el banner de versión dice **“ANIME EDITION”** (amarillo
+  con contorno azul, a juego con el logo). Se genera con
   `python3 dev_scripts/generate_title_version.py`, que escribe
   `graphics/title_screen/emerald_version.png` (128x32, 16 colores).
+- **Título (fondo BG0):** en vez de Rayquaza, muestra **Pueblo Paleta**: cielo,
+  montañas, colinas, casas, camino, árboles y un **Pikachu** en primer plano.
+  Las nubes de BG1 se conservan y se desplazan por delante.
+  - Assets: `graphics/title_screen/kanto.png` (atlas 128x128 de 16x16 tiles),
+    `kanto.bin` (tilemap 32x32) y `kanto_and_clouds.pal` (banco 14).
+  - Generador: `python3 dev_scripts/generate_title_bg.py`.
+  - **Trampa:** el PNG debe ser un **atlas de tiles**, no la escena completa:
+    el build convierte todos los tiles en orden secuencial. Una escena de
+    240x160 son 600 tiles (>512 del char base) y los índices del tilemap no
+    coinciden. El atlas 16x16 mantiene 226 tiles únicos y el tilemap referencia
+    exactamente ese orden.
+  - Se retiró `UpdateLegendaryMarkingColor()` (animaba las marcas de Rayquaza
+    sobre el índice 15 del banco 14); ahora el índice 15 es el amarillo de
+    Pikachu.
+  - “PRESS START” y el banner de copyright siguen siendo los del motor.
 
 ### 3.1 Dormitorio (2F)
 - Spawn: `MAP_PALLET_TOWN_PLAYERS_HOUSE_2F` en `(5,6)`.
