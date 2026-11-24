@@ -35,3 +35,13 @@
 ## Recursos Gráficos FRLG en Build Emerald (`-DEMERALD`)
 - **Nunca** vuelvas a encerrar tras `#if IS_FRLG` los recursos de overworld FRLG (`object_event_graphics.h`, `object_event_pic_tables.h`, `object_event_graphics_info.h`, `object_event_graphics_info_pointers.h` y las paletas en `src/event_object_movement.c`); dejar huecos `NULL` en la tabla de punteros provoca un reinicio inmediato al spawnear NPCs de Kanto.
 - Usa `tools/anime-debug/` (según `docs/anime-debug.md`) para verificar en memoria coordenadas, flags y equipo tras compilar.
+
+## Estado y Reglas de Arranque (Fase 0)
+> Documento detallado: **`docs/phase0-progress.md`** (leer antes de tocar el arranque, Kanto o el multiidioma).
+
+- **Sin discurso de Oak en el arranque:** `src/oak_speech.c` queda fuera del flujo de nueva partida (escena FRLG frágil con `IS_FRLG=0`). El botón NUEVA PARTIDA hace `fade` → `SetMainCallback2(CB2_NewGame)` con `gSelectedBootGender`/`gSelectedBootName` ya fijados.
+- **Un único warp de nueva partida:** `WarpToTruck()` en `src/new_game.c` → `MAP_PALLET_TOWN_PLAYERS_HOUSE_2F` en `(5,6)`. No añadir otros warps en el arranque (el “doble warp” con OakSpeech causaba reinicios).
+- **`CB2_NewGame()`:** mantener `gMain.state = 0;` antes de `DoMapLoadLoop()` (`src/overworld.c`).
+- **Flags 0x49B–0x49F:** `FLAG_HIDE_BULBASAUR_BALL`, `..._SQUIRTLE_BALL`, `..._CHARMANDER_BALL`, `FLAG_HIDE_RIVAL_IN_LAB` y `FLAG_HIDE_OAK_IN_PALLET_TOWN` son flags reales y se activan en `NewGameInitData()` (antes estaban stubbeadas a `0` y los objetos aparecían siempre).
+- **Escena del laboratorio:** `VAR_MAP_SCENE_PALLET_TOWN_PROFESSOR_OAKS_LAB` pasa a `9` al entregar a Pikachu (nunca a `1`, que dispara la escena vanilla de los 3 starters) y `VAR_MAP_SCENE_PALLET_TOWN_OAK` se fija a `1` para desactivar el trigger de Oak del pueblo.
+- **Multiidioma de menús:** `GetAnimeYesNoText()` (`SÍ/NO`, `YES/NO`, `SIM/NAO`, `SÌ/NO`) y `GetAnimeMoveOkBackText()` viven en `src/event_data.c`; `src/menu.c` y `src/naming_screen.c` los consumen.

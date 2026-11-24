@@ -6,7 +6,9 @@ No gdb needed: speaks the wire protocol directly so we can read memory
 """
 import socket, sys, time, re, argparse
 
-MAP_FILE = "/home/david/des/pokemon-anime-edition/pokeemerald.map"
+import os
+_REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+MAP_FILE = os.environ.get("ANIME_MAP", os.path.join(_REPO, "pokeemerald.map"))
 
 def load_symbols(path=MAP_FILE):
     syms = {}
