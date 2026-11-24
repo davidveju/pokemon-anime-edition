@@ -3,7 +3,7 @@
 > Última actualización: 2026-11-24
 > Rama de desarrollo: `pokemon-anime-edition` (publicada en `origin`).
 > Base: `master` = `origin/master` (`10e22cf91e`, Esmeralda prístina).
-> ROM de referencia: `pokemon-anime-edition.gba` — **28.488.004 B usados (84,90 %)**, por debajo del límite de 32 MiB.
+> ROM de referencia: `pokemon-anime-edition.gba` — **28.487.172 B usados (84,90 %)**, por debajo del límite de 32 MiB.
 
 Este documento resume **qué está hecho, cómo está hecho y qué no debe romperse**.
 Si algo de aquí se cambia, actualizar este archivo en el mismo commit.
@@ -112,8 +112,9 @@ Boot GBA
 - No depende de `IS_FRLG`; el `.c` del intro FRLG ya se compilaba en Emerald.
 - **Título (logo):** el antiguo banner de versión se retiró. El wordmark
   **Pokémon** y el óvalo **Pika!** se extrajeron del logo auténtico de Pokémon
-  Amarillo (`pokemon_logo_source.png`), se limpiaron y se les añadió
-  **ANIME** / **EDITION** en los laterales (en el hueco de "YELLOW VERSION").
+  Amarillo (`pokemon_logo_source.png`) y se limpiaron de "YELLOW VERSION" y de
+  cualquier texto de edición. El logo final es solo **Pokémon + Pika!**; el
+  nombre del juego queda en el copyright inferior "© 2026 ANIME EDITION".
   `pokemon_logo.png` (256x64, paleta de 224 colores) se genera con
   `python3 dev_scripts/generate_title_logo.py`; el tilemap `pokemon_logo.bin`
   referencia los 256 tiles secuenciales de la imagen y deja el resto en el tile 0.
@@ -273,7 +274,7 @@ Ver `docs/anime-debug.md`. Resumen:
 | Selector de idioma al arrancar | 4 opciones visibles y seleccionables (ES/EN/PT/IT) |
 | Menú principal tras idioma | `NUEVA PARTIDA` / `OPCIONES` visibles (ES) |
 | Título estilo Amarillo | Pikachu y logo auténticos de Amarillo + “PULSA START” verificados |
-| Tamaño de ROM | 28.488.004 B usados (84,90 %) |
+| Tamaño de ROM | 28.487.172 B usados (84,90 %) |
 
 ---
 
@@ -338,7 +339,7 @@ Antes de tocar arranque, mapas de Kanto o multiidioma:
 ### 9.5 Compilación y pruebas (OK)
 - `make -j3`: 0 errores / 0 warnings.
 - `make -j3 pokeemerald-test.elf`: enlaza correctamente (incluye el cambio de `test/text.c`).
-- ROM usada: **28.488.004 B (84,90 %)**.
+- ROM usada: **28.487.172 B (84,90 %)**.
 - `tools/anime-debug/boottest.py`: `FIELD OK map=(1,38) pos=(5,6)`.
 
 ### 9.6 Riesgo preexistente detectado (no corregido aún)

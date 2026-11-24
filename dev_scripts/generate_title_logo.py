@@ -4,8 +4,8 @@
 Fuente: `graphics/title_screen/pokemon_logo_source.png` (wordmark "Pokémon" +
 óvalo "Pika!" recortados de la referencia de Amarillo, sin "YELLOW VERSION" ni
 copyright). Se escala a 152x58, se cuantiza a la paleta completa del logo
-(224 colores) y se añaden "ANIME" y "EDITION" a los lados del óvalo, imitando el
-"YELLOW VERSION" original.
+(224 colores). No lleva textos de edición: el nombre del juego queda en el
+copyright inferior "© 2026 ANIME EDITION".
 
 Salidas:
   - graphics/title_screen/pokemon_logo.png   256x64, índice 0 transparente
@@ -28,7 +28,6 @@ PAL_FILE = os.path.join(OUT_DIR, "pokemon_logo.pal")
 W, H = 256, 64
 LOGO_W, LOGO_H = 152, 58
 LOGO_X, LOGO_Y = 7, 4
-YELLOW_INDEX = 2
 BLUE_INDEX = 10
 
 
@@ -49,39 +48,6 @@ def load_palette():
 def flat_palette(palette):
     flat = [c for rgb in palette for c in rgb]
     return flat + [0, 0, 0] * (256 - len(palette))
-
-
-FONT5 = {
-    "A": ["01110", "10001", "11111", "10001", "10001"],
-    "N": ["10001", "11001", "10101", "10011", "10001"],
-    "I": ["11111", "00100", "00100", "00100", "11111"],
-    "M": ["10001", "11011", "10101", "10001", "10001"],
-    "E": ["11111", "10000", "11110", "10000", "11111"],
-    "D": ["11110", "10001", "10001", "10001", "11110"],
-    "T": ["11111", "00100", "00100", "00100", "00100"],
-    "O": ["01110", "10001", "10001", "10001", "01110"],
-}
-
-
-def draw_text(pixels, text, x, y):
-    for i, ch in enumerate(text):
-        glyph = FONT5[ch]
-        gx = x + i * 5
-        for gy, row in enumerate(glyph):
-            for gx2, bit in enumerate(row):
-                if bit == "1":
-                    for dx in (-1, 0, 1):
-                        for dy in (-1, 0, 1):
-                            nx, ny = gx + gx2 + dx, y + gy + dy
-                            if 0 <= nx < W and 0 <= ny < H:
-                                pixels[nx, ny] = BLUE_INDEX
-    for i, ch in enumerate(text):
-        glyph = FONT5[ch]
-        gx = x + i * 5
-        for gy, row in enumerate(glyph):
-            for gx2, bit in enumerate(row):
-                if bit == "1":
-                    pixels[gx + gx2, y + gy] = YELLOW_INDEX
 
 
 def main():
@@ -121,10 +87,6 @@ def main():
                         break
     for x, y in fringe:
         lp[x, y] = BLUE_INDEX
-
-    # "YELLOW VERSION" -> "ANIME" / "EDITION", en el mismo hueco.
-    draw_text(lp, "ANIME", 8, 51)
-    draw_text(lp, "EDITION", 124, 51)
 
     logo.save(OUT_PNG)
     tilemap = bytearray(1024)
